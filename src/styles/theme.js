@@ -22,27 +22,6 @@ export const layout = {
   buttonHeight: '56px',
   buttonRadius: '28px',
   cardRadius: '20px',
-  scheduleCard: {
-    width: '362px',
-    height: '150px',
-    top: '260px',
-    left: '20px',
-  },
-  trainName: {
-    width: '112px',
-    height: '34px',
-    top: '421px',
-    left: '142px',
-    fontSize: '24px',
-    lineHeight: '140%',
-    fontWeight: 700,
-  },
-  ticketCard: {
-    width: '362px',
-    height: '213px',
-    top: '466px',
-    left: '20px',
-  },
 };
 
 export const typography = {

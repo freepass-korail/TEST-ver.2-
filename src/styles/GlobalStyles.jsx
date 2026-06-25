@@ -20,12 +20,10 @@ const GlobalStyle = createGlobalStyle`
 
   html, body, #root {
     height: 100%;
+    overflow: hidden;
   }
 
   body {
-    display: flex;
-    align-items: center;
-    justify-content: center;
     min-height: 100dvh;
     font-family: ${typography.fontFamily};
     background-color: var(--color-korail-bg);

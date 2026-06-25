@@ -1,3 +1,9 @@
+# 코레일 승강장 안내 서비스
+
+**라이브 데모:** [https://korail-fe.vercel.app/](https://korail-fe.vercel.app/)
+
+---
+
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

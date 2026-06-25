@@ -6,7 +6,7 @@ export const defaultTicket = {
   departureTime: '07:25',
   arrivalTime: '09:05',
   platform: '5번',
-  carNumber: '2호차',
+  carNumber: '12호차',
   seatNumber: '5C',
   seatClass: '일반실 | 순방향 | 경로할인',
   ticketNumber: '00000-0000-00000-00',
