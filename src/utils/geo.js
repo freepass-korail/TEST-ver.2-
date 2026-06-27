@@ -99,3 +99,20 @@ export function getGeolocationErrorMessage(code) {
       return '위치 정보를 가져오지 못했습니다.';
   }
 }
+
+/** Safari 등 — 이미 거부된 경우 팝업 없이 바로 실패함 */
+export async function queryGeolocationPermission() {
+  if (!navigator.permissions?.query) return 'unknown';
+
+  try {
+    const result = await navigator.permissions.query({ name: 'geolocation' });
+    return result.state;
+  } catch {
+    return 'unknown';
+  }
+}
+
+export const PERMISSION_REQUEST_OPTIONS = {
+  ...GEOLOCATION_OPTIONS,
+  timeout: 30000,
+};

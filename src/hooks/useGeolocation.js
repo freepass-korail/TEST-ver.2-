@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { GEOLOCATION_OPTIONS, getGeolocationErrorMessage } from '../utils/geo';
+import { GEOLOCATION_OPTIONS, getGeolocationErrorMessage, PERMISSION_REQUEST_OPTIONS } from '../utils/geo';
 
 /** S2 등에서 1회 권한 요청용 */
-export function requestGeolocationPermission(options = GEOLOCATION_OPTIONS) {
+export function requestGeolocationPermission(options = PERMISSION_REQUEST_OPTIONS) {
   return new Promise((resolve, reject) => {
     if (!('geolocation' in navigator)) {
       reject(new Error('이 브라우저는 위치 서비스를 지원하지 않습니다.'));
