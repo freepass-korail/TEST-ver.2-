@@ -98,101 +98,38 @@ const ActionButton = styled.button`
   }
 `;
 
-const IOS_COPY = {
-  intro: {
-    title: '길찾기 권한이\n필요합니다',
-    body: `iPhone은 권한을 두 번
-나눠 허용합니다.
-
-① 동작 및 방향
-② 위치`,
-    allow: '1단계: 방향 센서 허용',
-  },
-  'waiting-orientation': {
-    title: '권한을 확인하고 있어요',
-    body: `동작 및 방향 팝업에서
-「허용」을 눌러 주세요.`,
-    allow: '확인 중…',
-  },
-  location: {
-    title: '방향 센서\n허용 완료',
-    body: `이제 위치 팝업이
-나타납니다.
-
-아래 버튼을 누른 뒤
-「허용」을 선택해 주세요.`,
-    allow: '2단계: 위치 허용',
-  },
-  'waiting-location': {
-    title: '위치 권한 확인 중',
-    body: `위치 팝업에서
-「허용」 또는
-「앱 사용 중 허용」을
-선택해 주세요.`,
-    allow: '확인 중…',
-  },
-};
-
-const DEFAULT_COPY = {
-  intro: {
-    title: '현재 정확한 위치를\n공유하시겠습니까?',
-    body: `안전하고 정확한 승강장
-길찾기 안내를 위해
-위치 정보 및 기기 방향
-센서 허용이 필요합니다.`,
-    allow: '위치 허용',
-  },
-  waiting: {
-    title: '권한을 확인하고 있어요',
-    body: `브라우저 팝업에서
-위치·방향 센서 허용을
-선택해 주세요.`,
-    allow: '확인 중…',
-  },
-};
-
-function PermissionModal({ phase = 'intro', isIOS = false, isRequesting = false, onAllow, onDeny }) {
-  let title;
-  let body;
-  let allowLabel;
-
-  if (isIOS) {
-    const copy = IOS_COPY[phase] ?? IOS_COPY.intro;
-    title = copy.title;
-    body = copy.body;
-    allowLabel = copy.allow;
-  } else if (isRequesting) {
-    title = DEFAULT_COPY.waiting.title;
-    body = DEFAULT_COPY.waiting.body;
-    allowLabel = DEFAULT_COPY.waiting.allow;
-  } else {
-    title = DEFAULT_COPY.intro.title;
-    body = DEFAULT_COPY.intro.body;
-    allowLabel = DEFAULT_COPY.intro.allow;
-  }
-
-  const waitingPhase = isIOS
-    ? phase === 'waiting-orientation' || phase === 'waiting-location'
-    : isRequesting;
-
+function PermissionModal({ onAllow, onDeny, isRequesting = false }) {
   return (
     <>
       <Backdrop aria-hidden="true" />
       <ModalLayer role="dialog" aria-modal="true" aria-labelledby="permission-title">
         <Modal>
           <ModalHeader>
-            <ModalTitle id="permission-title">{title}</ModalTitle>
+            <ModalTitle id="permission-title">
+              {isRequesting
+                ? '권한을 확인하고 있어요'
+                : `현재 정확한 위치를\n공유하시겠습니까?`}
+            </ModalTitle>
           </ModalHeader>
           <ModalBodyWrap>
             <ModalBodyBox>
-              <ModalBody>{body}</ModalBody>
+              <ModalBody>
+                {isRequesting
+                  ? `브라우저(또는 iPhone) 팝업에서
+위치·방향 센서 허용을
+선택해 주세요.`
+                  : `안전하고 정확한 승강장
+길찾기 안내를 위해
+위치 정보 및 기기 방향
+센서 허용이 필요합니다.`}
+              </ModalBody>
             </ModalBodyBox>
           </ModalBodyWrap>
           <ActionList>
-            <ActionButton type="button" $primary onClick={onAllow} disabled={waitingPhase}>
-              {allowLabel}
+            <ActionButton type="button" $primary onClick={onAllow} disabled={isRequesting}>
+              {isRequesting ? '확인 중…' : '위치 허용'}
             </ActionButton>
-            <ActionButton type="button" $divider onClick={onDeny} disabled={waitingPhase}>
+            <ActionButton type="button" $divider onClick={onDeny} disabled={isRequesting}>
               허용 안함
             </ActionButton>
           </ActionList>
