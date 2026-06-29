@@ -116,3 +116,4 @@ export const PERMISSION_REQUEST_OPTIONS = {
   ...GEOLOCATION_OPTIONS,
   timeout: 30000,
 };
+

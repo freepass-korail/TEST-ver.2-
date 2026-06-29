@@ -5,6 +5,7 @@ import GeolocationDeniedModal from './common/GeolocationDeniedModal';
 import { defaultTicket } from '../data/defaultTicket';
 import useNavigationTracking from '../hooks/useNavigationTracking';
 import useFollowAngle from '../hooks/useFollowAngle';
+import S5NavigationArrow from './common/S5NavigationArrow';
 import { formatGuideDistance, getCompassDotPosition, getGuideMessage } from '../utils/geo';
 import { typography } from '../styles/theme';
 import { abs, figma, figmaText } from '../styles/figmaLayout';
@@ -42,9 +43,10 @@ function S5_Navigation() {
   );
 
   const compass = s5.compass;
+  const arrow = s5.arrow;
   const innerLocalCenter = s5.innerRing.width / 2;
   const arrowMaxLength = compass.innerRadius - compass.arrowMargin;
-  const arrowScale = arrowMaxLength / s5.arrow.height;
+  const arrowScale = arrowMaxLength / arrow.halfExtent;
   const arrowAngle = useFollowAngle(destinationAngle);
 
   const dotPosition = useMemo(
@@ -158,7 +160,7 @@ function S5_Navigation() {
         }}
       />
 
-      {/* 방향 화살표 — 목적지 점 방향으로 따라감 */}
+      {/* 방향 화살표 — 원 중앙 고정, 제자리 회전 */}
       <div
         aria-hidden
         style={{
@@ -171,53 +173,30 @@ function S5_Navigation() {
         <div
           style={{
             position: 'absolute',
-            inset: 0,
+            left: innerLocalCenter,
+            top: innerLocalCenter,
+            width: 0,
+            height: 0,
             transform: `rotate(${arrowAngle}deg)`,
-            transformOrigin: `${innerLocalCenter}px ${innerLocalCenter}px`,
             opacity: compassOpacity,
           }}
         >
-          <svg
+          <div
             style={{
               position: 'absolute',
-              left: innerLocalCenter,
-              top: innerLocalCenter,
-              width: s5.arrow.width,
-              height: s5.arrow.height,
-              overflow: 'visible',
-              transform: `translate(-50%, -100%) scale(${arrowScale})`,
-              transformOrigin: '50% 100%',
+              left: 0,
+              top: 0,
+              transform: `translate(-50%, -50%) scale(${arrowScale})`,
+              transformOrigin: 'center center',
             }}
-            viewBox={`0 0 ${s5.arrow.width} ${s5.arrow.height}`}
           >
-            <line
-              x1="40"
-              y1="220"
-              x2="40"
-              y2="50"
-              stroke="#FFFFFF"
-              strokeWidth={s5.arrow.strokeWidth}
-              strokeLinecap="round"
+            <S5NavigationArrow
+              width={arrow.width}
+              height={arrow.height}
+              strokeWidth={arrow.strokeWidth}
+              color={arrow.color}
             />
-            <line
-              x1="40"
-              y1="50"
-              x2="12"
-              y2="100"
-              stroke="#FFFFFF"
-              strokeWidth={s5.arrow.strokeWidth}
-              strokeLinecap="round"
-            />
-            <line
-              x1="40"
-              y1="50"
-              x2="68"
-              y2="100"
-              stroke="#FFFFFF"
-              strokeWidth={s5.arrow.strokeWidth}
-              strokeLinecap="round"
-            />
-          </svg>
+          </div>
         </div>
       </div>
 

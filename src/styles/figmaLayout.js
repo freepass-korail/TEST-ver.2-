@@ -320,10 +320,16 @@ export const figma = {
       innerRadius: 141.5,
       dotOrbitRadius: 161.25,
       dotSize: 39,
-      arrowMargin: 16,
+      arrowMargin: 45,
     },
     headingDot: { width: 39, height: 39, background: '#FFFFFF', radius: '50%' },
-    arrow: { width: 80, height: 220, strokeWidth: 30 },
+    arrow: {
+      width: 80,
+      height: 220,
+      strokeWidth: 30,
+      halfExtent: 85,
+      color: '#FFFFFF',
+    },
     timeCard: { width: 122, height: 93, top: 75, left: 20, radius: 14, background: '#FFFFFF' },
     timeLabel: {
       width: 100,
