@@ -15,6 +15,7 @@ function FigmaPrimaryButton({
   children,
   onClick,
   dimmed = false,
+  disabled = false,
   variant = 'primary',
   style,
 }) {
@@ -22,11 +23,13 @@ function FigmaPrimaryButton({
   const isSecondary = variant === 'secondary';
   const btnLeft = style?.left ?? btn.left;
   const btnWidth = style?.width ?? btn.width;
+  const isInactive = dimmed || disabled;
 
   return (
     <button
       type="button"
-      onClick={dimmed ? undefined : onClick}
+      onClick={isInactive ? undefined : onClick}
+      disabled={disabled}
       style={{
         position: 'absolute',
         top: btn.top,
@@ -35,10 +38,10 @@ function FigmaPrimaryButton({
         height: btn.height,
         borderRadius: btn.borderRadius,
         border: 'none',
-        background: dimmed ? '#9BB8F5' : isSecondary ? '#444444' : btn.background,
+        background: isInactive ? '#9BB8F5' : isSecondary ? '#444444' : btn.background,
         padding: 0,
-        cursor: dimmed ? 'default' : 'pointer',
-        pointerEvents: dimmed ? 'none' : 'auto',
+        cursor: isInactive ? 'default' : 'pointer',
+        pointerEvents: isInactive ? 'none' : 'auto',
         transition: 'background-color 0.15s',
         display: 'flex',
         alignItems: 'center',

@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import useFlowStore from '../store/useFlowStore';
 import ScreenShell from './common/ScreenShell';
 import FigmaPrimaryButton from './common/FigmaPrimaryButton';
 import ktxLogo from '../assets/ktx-logo.png';
-import { defaultTicket } from '../data/defaultTicket';
+import { fetchRoute } from '../api/guide';
 import { screenConfig, typography } from '../styles/theme';
 import { abs, figma, figmaText } from '../styles/figmaLayout';
 
@@ -17,19 +17,57 @@ function parseCarDigits(carNumber) {
 }
 
 function S4_Standby() {
-  const { ticketInfo, setStep } = useFlowStore();
+  const {
+    ticketInfo,
+    reservationId,
+    setStep,
+    setRoute,
+    routeLoading,
+    setRouteLoading,
+    routeError,
+    setRouteError,
+  } = useFlowStore();
+  const [localLoading, setLocalLoading] = useState(false);
   const config = screenConfig.S4;
   const s4 = figma.s4;
-  const info = { ...defaultTicket, ...ticketInfo };
+  const info = ticketInfo;
   const text = (spec) => figmaText(spec, typography.fontFamily);
   const platformNum = parsePlatformNumber(info.platform);
   const carDigits = parseCarDigits(info.carNumber);
+  const loading = localLoading || routeLoading;
+
+  const handleStartNavigation = () => {
+    if (!reservationId) {
+      setRouteError('예약 정보가 없습니다. 처음부터 다시 시작해 주세요.');
+      return;
+    }
+
+    setLocalLoading(true);
+    setRouteLoading(true);
+    setRouteError(null);
+
+    fetchRoute({ reservationId })
+      .then((route) => {
+        setRoute(route);
+        setStep('S5');
+      })
+      .catch((error) => {
+        console.error('[guide/route]', error);
+        setRouteError('경로 정보를 불러오지 못했습니다.');
+      })
+      .finally(() => {
+        setLocalLoading(false);
+        setRouteLoading(false);
+      });
+  };
 
   return (
     <ScreenShell
       showHeader={config.showHeader}
       bottomButton={
-        <FigmaPrimaryButton onClick={() => setStep('S5')}>길찾기 시작</FigmaPrimaryButton>
+        <FigmaPrimaryButton onClick={handleStartNavigation} disabled={loading}>
+          {loading ? '경로 불러오는 중…' : '길찾기 시작'}
+        </FigmaPrimaryButton>
       }
     >
       <p style={text(s4.platformLabel)}>타는 곳</p>
@@ -56,6 +94,12 @@ function S4_Standby() {
           objectFit: 'contain',
         }}
       />
+
+      {routeError && (
+        <p style={{ ...text(s4.platformLabel), color: '#b91c1c', top: s4.platformLabel.top - 40 }}>
+          {routeError}
+        </p>
+      )}
 
       {s4.carDigits.map((item, i) => (
         <React.Fragment key={i}>

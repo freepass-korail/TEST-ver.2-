@@ -1,6 +1,4 @@
 import { create } from 'zustand';
-import { defaultTicket } from '../data/defaultTicket';
-import { DEFAULT_DESTINATION } from '../data/destination';
 
 const emptyTicket = {
   trainName: '',
@@ -16,6 +14,15 @@ const emptyTicket = {
   ticketNumber: '',
 };
 
+function stepToDestination(step) {
+  if (!step) return null;
+  return {
+    lat: step.lat,
+    lng: step.lng,
+    label: step.name ?? '',
+  };
+}
+
 const useFlowStore = create((set, get) => ({
   step: 'SMS',
   mapInstance: null,
@@ -24,7 +31,14 @@ const useFlowStore = create((set, get) => ({
   reservationId: null,
   ticketInfo: { ...emptyTicket },
 
-  destination: { ...DEFAULT_DESTINATION },
+  routeId: null,
+  routeSteps: [],
+  currentStepIndex: 0,
+  currentInstruction: '',
+  routeLoading: false,
+  routeError: null,
+
+  destination: null,
   position: null,
   heading: 0,
   bearing: null,
@@ -38,8 +52,50 @@ const useFlowStore = create((set, get) => ({
   setReservation: (id, info) =>
     set({
       reservationId: id,
-      ticketInfo: { ...get().ticketInfo, ...defaultTicket, ...info },
+      ticketInfo: { ...emptyTicket, ...info },
     }),
+
+  setRouteLoading: (routeLoading) => set({ routeLoading }),
+  setRouteError: (routeError) => set({ routeError }),
+
+  setRoute: (route) => {
+    const steps = route?.steps ?? [];
+    const first = steps[0] ?? null;
+
+    set({
+      routeId: route?.routeId ?? null,
+      routeSteps: steps,
+      currentStepIndex: 0,
+      currentInstruction: first?.instruction ?? '',
+      destination: stepToDestination(first),
+      routeError: null,
+      distanceM: null,
+      bearing: null,
+      destinationAngle: 0,
+    });
+  },
+
+  getCurrentStep: () => {
+    const { routeSteps, currentStepIndex } = get();
+    return routeSteps[currentStepIndex] ?? null;
+  },
+
+  advanceStep: () => {
+    const { routeSteps, currentStepIndex } = get();
+    const nextIndex = currentStepIndex + 1;
+    if (nextIndex >= routeSteps.length) return false;
+
+    const next = routeSteps[nextIndex];
+    set({
+      currentStepIndex: nextIndex,
+      currentInstruction: next?.instruction ?? '',
+      destination: stepToDestination(next),
+      distanceM: null,
+      bearing: null,
+      destinationAngle: 0,
+    });
+    return true;
+  },
 
   toggleVoiceGuide: () => set((state) => ({ voiceGuide: !state.voiceGuide })),
 
@@ -61,6 +117,13 @@ const useFlowStore = create((set, get) => ({
       step: 'SMS',
       reservationId: null,
       ticketInfo: { ...emptyTicket },
+      routeId: null,
+      routeSteps: [],
+      currentStepIndex: 0,
+      currentInstruction: '',
+      routeLoading: false,
+      routeError: null,
+      destination: null,
       position: null,
       heading: 0,
       bearing: null,

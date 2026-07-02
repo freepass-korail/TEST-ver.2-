@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef } from 'react';
 import useFlowStore from '../store/useFlowStore';
 import { completeGuide } from '../api/guide';
-import { DEFAULT_DESTINATION } from '../data/destination';
 import {
   ARRIVAL_RADIUS_M,
   getArrowRotation,
   getBearing,
   getDistanceMeters,
+  STEP_ARRIVAL_RADIUS_M,
 } from '../utils/geo';
 import useDeviceOrientation from './useDeviceOrientation';
 import useGeolocation from './useGeolocation';
@@ -23,19 +23,25 @@ function useNavigationTracking({ enabled = true, onArrived } = {}) {
   const { startListening, stopListening } = useDeviceOrientation();
 
   const reservationId = useFlowStore((s) => s.reservationId);
-  const destination = useFlowStore((s) => s.destination);
   const mapInstance = useFlowStore((s) => s.mapInstance);
   const setNavigation = useFlowStore((s) => s.setNavigation);
   const setGeoError = useFlowStore((s) => s.setGeoError);
   const setStep = useFlowStore((s) => s.setStep);
-
-  const dest = destination ?? DEFAULT_DESTINATION;
+  const advanceStep = useFlowStore((s) => s.advanceStep);
 
   const stopTrackingRef = useRef(() => {});
 
   const handlePositionUpdate = useCallback(
     (pos) => {
       if (hasArrivedRef.current) return;
+
+      const { destination: dest, routeSteps: steps, currentStepIndex: stepIndex } =
+        useFlowStore.getState();
+
+      if (!dest?.lat || !dest?.lng) return;
+
+      const isLastStep = stepIndex >= steps.length - 1;
+      const arrivalRadius = isLastStep ? ARRIVAL_RADIUS_M : STEP_ARRIVAL_RADIUS_M;
 
       const distanceM = getDistanceMeters(pos.lat, pos.lng, dest.lat, dest.lng);
       const bearing = getBearing(pos.lat, pos.lng, dest.lat, dest.lng);
@@ -53,28 +59,35 @@ function useNavigationTracking({ enabled = true, onArrived } = {}) {
       mapInstance?.setMarkerRotation?.(heading);
       mapInstance?.panTo?.({ lat: pos.lat, lng: pos.lng });
 
-      if (distanceM <= ARRIVAL_RADIUS_M) {
-        hasArrivedRef.current = true;
-        stopTrackingRef.current();
+      if (distanceM > arrivalRadius) return;
 
-        vibrateOnArrival();
-
-        if (reservationId) {
-          completeGuide(reservationId).catch((err) => {
-            console.error('[guide/complete]', err);
-          });
-        }
-
-        onArrived?.();
-        setStep('S5_1');
+      if (!isLastStep) {
+        advanceStep();
+        return;
       }
+
+      hasArrivedRef.current = true;
+      stopTrackingRef.current();
+
+      vibrateOnArrival();
+
+      if (reservationId) {
+        completeGuide(reservationId).catch((err) => {
+          console.error('[guide/complete]', err);
+        });
+      }
+
+      onArrived?.();
+      setStep('S5_1');
     },
-    [dest.lat, dest.lng, mapInstance, onArrived, reservationId, setNavigation, setStep]
+    [advanceStep, mapInstance, onArrived, reservationId, setNavigation, setStep]
   );
 
   const handleHeadingUpdate = useCallback(
     (heading) => {
-      const { position, bearing: storedBearing } = useFlowStore.getState();
+      const { position, bearing: storedBearing, destination: dest } = useFlowStore.getState();
+      if (!dest?.lat || !dest?.lng) return;
+
       const bearing =
         storedBearing ??
         (position ? getBearing(position.lat, position.lng, dest.lat, dest.lng) : null);
@@ -83,7 +96,7 @@ function useNavigationTracking({ enabled = true, onArrived } = {}) {
       setNavigation({ heading, bearing, destinationAngle });
       mapInstance?.setMarkerRotation?.(heading);
     },
-    [dest.lat, dest.lng, mapInstance, setNavigation]
+    [mapInstance, setNavigation]
   );
 
   const startTracking = useCallback(() => {
@@ -110,6 +123,9 @@ function useNavigationTracking({ enabled = true, onArrived } = {}) {
 
   useEffect(() => {
     if (!enabled) return undefined;
+
+    const { routeSteps: steps } = useFlowStore.getState();
+    if (steps.length === 0) return undefined;
 
     startTracking();
     return () => stopTracking();

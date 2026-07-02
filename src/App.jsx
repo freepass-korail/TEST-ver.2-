@@ -1,9 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import GlobalStyle from './styles/GlobalStyles';
 import Layout from './components/common/Layout';
 import MapContainer from './components/common/MapContainer';
 import useFlowStore from './store/useFlowStore';
 import { screenConfig } from './styles/theme';
+import { fetchSession } from './api/guide';
 
 import SMS_Entry from './components/SMS_Entry';
 import S1_Join from './components/S1_Join';
@@ -15,20 +16,25 @@ import S5_1_Arrived from './components/S5_1_Arrived';
 import E1_StaticGuide from './components/E1_StaticGuide';
 import E2_MoveGuide from './components/E2_MoveGuide';
 
-import { defaultTicket } from './data/defaultTicket';
-
 function App() {
   const { step, setStep, setReservation } = useFlowStore();
   const currentScreen = screenConfig[step] || screenConfig.S1;
+  const [sessionError, setSessionError] = useState(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const id = params.get('reservationId');
+    const token = params.get('token') ?? params.get('reservationId');
+    if (!token) return;
 
-    if (id) {
-      setReservation(id, defaultTicket);
-      setStep('S1');
-    }
+    fetchSession(token)
+      .then((session) => {
+        setReservation(session.reservationId, session.ticket);
+        setStep('S1');
+      })
+      .catch((error) => {
+        console.error('[guide/session]', error);
+        setSessionError('승차권 정보를 불러오지 못했습니다.');
+      });
   }, [setReservation, setStep]);
 
   const renderStepComponent = () => {
@@ -63,6 +69,26 @@ function App() {
         <div style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }} aria-hidden>
           <MapContainer />
         </div>
+
+        {sessionError && (
+          <div
+            role="alert"
+            style={{
+              position: 'absolute',
+              top: 12,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 100,
+              padding: '10px 16px',
+              borderRadius: 8,
+              background: '#FEE2E2',
+              color: '#991B1B',
+              fontSize: 14,
+            }}
+          >
+            {sessionError}
+          </div>
+        )}
 
         <div
           style={{

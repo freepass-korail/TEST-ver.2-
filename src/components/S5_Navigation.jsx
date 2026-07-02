@@ -2,16 +2,17 @@ import React, { useMemo } from 'react';
 import useFlowStore from '../store/useFlowStore';
 import SpeakerIcon from './common/SpeakerIcon';
 import GeolocationDeniedModal from './common/GeolocationDeniedModal';
-import { defaultTicket } from '../data/defaultTicket';
 import useNavigationTracking from '../hooks/useNavigationTracking';
 import useFollowAngle from '../hooks/useFollowAngle';
 import S5NavigationArrow from './common/S5NavigationArrow';
-import { formatGuideDistance, getCompassDotPosition, getGuideMessage } from '../utils/geo';
+import { formatGuideDistance, getCompassDotPosition, getNavigationInstruction } from '../utils/geo';
 import { typography } from '../styles/theme';
 import { abs, figma, figmaText } from '../styles/figmaLayout';
 
 function S5_Navigation() {
   const ticketInfo = useFlowStore((s) => s.ticketInfo);
+  const currentInstruction = useFlowStore((s) => s.currentInstruction);
+  const routeSteps = useFlowStore((s) => s.routeSteps);
   const voiceGuide = useFlowStore((s) => s.voiceGuide);
   const toggleVoiceGuide = useFlowStore((s) => s.toggleVoiceGuide);
   const setStep = useFlowStore((s) => s.setStep);
@@ -21,10 +22,10 @@ function S5_Navigation() {
   const setGeoError = useFlowStore((s) => s.setGeoError);
   const isTracking = useFlowStore((s) => s.isTracking);
 
-  const { stopTracking } = useNavigationTracking({ enabled: true });
+  const { stopTracking } = useNavigationTracking({ enabled: routeSteps.length > 0 });
 
   const s5 = figma.s5;
-  const info = { ...defaultTicket, ...ticketInfo };
+  const info = ticketInfo;
   const text = (spec) => figmaText(spec, typography.fontFamily);
   const leftText = (spec) => ({
     ...text(spec),
@@ -38,8 +39,8 @@ function S5_Navigation() {
   );
 
   const guideMessage = useMemo(
-    () => getGuideMessage(distanceM, s5.guideText.text),
-    [distanceM, s5.guideText.text]
+    () => getNavigationInstruction(distanceM, currentInstruction),
+    [currentInstruction, distanceM]
   );
 
   const compass = s5.compass;

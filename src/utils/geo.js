@@ -56,6 +56,9 @@ export const GEOLOCATION_OPTIONS = {
 
 export const ARRIVAL_RADIUS_M = 3;
 
+/** 경로 중간 waypoint 도착 판정 (m) */
+export const STEP_ARRIVAL_RADIUS_M = 10;
+
 /** S5 UI용 거리 표시 — 역 안내는 m, 먼 경우 km */
 export function formatGuideDistance(distanceM) {
   if (distanceM == null || Number.isNaN(distanceM)) {
@@ -79,12 +82,10 @@ export function formatGuideDistance(distanceM) {
   return { value, unit: 'm', fontSize, isReady: true };
 }
 
-/** 거리에 따른 안내 문구 */
-export function getGuideMessage(distanceM, fallback) {
+/** API instruction + GPS 대기 fallback */
+export function getNavigationInstruction(distanceM, instruction) {
   if (distanceM == null) return '현재 위치를 확인하고 있어요.';
-  if (distanceM <= 15) return fallback ?? '에스컬레이터를 타고\n앞으로 직진하세요.';
-  if (distanceM <= 80) return '안내 방향으로\n계속 이동하세요.';
-  return '목적지 방향으로\n이동해 주세요.';
+  return instruction || '안내 방향으로\n이동해 주세요.';
 }
 
 export function getGeolocationErrorMessage(code) {

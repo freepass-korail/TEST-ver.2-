@@ -1,6 +1,7 @@
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import useFlowStore from '../store/useFlowStore';
-import { defaultTicket } from '../data/defaultTicket';
+import { fetchSession } from '../api/guide';
 import { colors, typography } from '../styles/theme';
 
 const PhoneFrame = styled.div`
@@ -124,15 +125,39 @@ const MessageLink = styled.button`
   text-decoration: underline;
   cursor: pointer;
   text-align: left;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: wait;
+  }
+`;
+
+const ErrorText = styled.p`
+  margin-top: 8px;
+  font-size: 13px;
+  color: #b91c1c;
 `;
 
 
 function SMS_Entry() {
   const { setStep, setReservation } = useFlowStore();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleStartService = () => {
-    setReservation('mock-reservation-001', defaultTicket);
-    setStep('S1');
+    setLoading(true);
+    setError(null);
+
+    fetchSession('mock-reservation-001')
+      .then((session) => {
+        setReservation(session.reservationId, session.ticket);
+        setStep('S1');
+      })
+      .catch((err) => {
+        console.error('[guide/session]', err);
+        setError('승차권 정보를 불러오지 못했습니다.');
+      })
+      .finally(() => setLoading(false));
   };
 
   return (
@@ -157,17 +182,11 @@ function SMS_Entry() {
           <MessageRoute>(서울역▶ 제천역)</MessageRoute>
           <MessageRoute>[KTX 1063]</MessageRoute>
           <MessageRoute>출발시간: 7시 25분</MessageRoute>
-          <p style={{ marginTop: 8 }}>
-            안녕하세요.
-            <br />
-            예매하신 열차 출발 15분 전입니다.
-            <br />
-            현재 위치를 확인하여 탑승 승강장까지 안내해 드립니다.
-          </p>
-          <p style={{ marginTop: 8 }}>▶ 승강장 안내 서비스 시작하기</p>
-          <MessageLink type="button" onClick={handleStartService}>
-            https://info.korail.com/info/index.do
+          <MessageRoute>타는곳: 5번 승강장 12호차 5C</MessageRoute>
+          <MessageLink type="button" onClick={handleStartService} disabled={loading}>
+            {loading ? '불러오는 중…' : '동행안내 시작하기'}
           </MessageLink>
+          {error && <ErrorText>{error}</ErrorText>}
         </MessageBubble>
       </MessageArea>
     </PhoneFrame>
