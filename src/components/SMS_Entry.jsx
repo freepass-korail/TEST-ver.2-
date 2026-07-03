@@ -373,7 +373,7 @@ function SMS_Entry() {
 
       {/* 메시지 */}
       <MessageArea>
-        <DateStamp>오늘 9:41</DateStamp>
+        <DateStamp>오늘 7:10</DateStamp>
 
         <BubbleRow>
           <BubbleAvatar />
