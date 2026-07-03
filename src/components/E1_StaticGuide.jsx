@@ -62,7 +62,7 @@ function E1_StaticGuide() {
         />
         <polygon points="32,0 50,6 32,12" fill="#000000" />
       </svg>
-      <p style={text(e1.arrivalStation)}>{info.arrivalStation}</p>
+      <p style={{ ...text(e1.arrivalStation), whiteSpace: 'nowrap' }}>{info.arrivalStation}</p>
       <p style={text(e1.departureTime)}>{info.departureTime}</p>
       <p style={text(e1.arrivalTime)}>{info.arrivalTime}</p>
 

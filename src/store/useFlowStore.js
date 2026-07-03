@@ -30,6 +30,8 @@ const useFlowStore = create((set, get) => ({
 
   reservationId: null,
   ticketInfo: { ...emptyTicket },
+  fromNode: null,
+  toNode: null,
 
   routeId: null,
   routeSteps: [],
@@ -49,10 +51,12 @@ const useFlowStore = create((set, get) => ({
 
   setStep: (nextStep) => set({ step: nextStep }),
 
-  setReservation: (id, info) =>
+  setReservation: (id, info, fromNode = null, toNode = null) =>
     set({
       reservationId: id,
       ticketInfo: { ...emptyTicket, ...info },
+      fromNode,
+      toNode,
     }),
 
   setRouteLoading: (routeLoading) => set({ routeLoading }),
@@ -117,6 +121,8 @@ const useFlowStore = create((set, get) => ({
       step: 'SMS',
       reservationId: null,
       ticketInfo: { ...emptyTicket },
+      fromNode: null,
+      toNode: null,
       routeId: null,
       routeSteps: [],
       currentStepIndex: 0,

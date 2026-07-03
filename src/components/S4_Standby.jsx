@@ -1,11 +1,31 @@
 import React, { useState } from 'react';
+import styled from 'styled-components';
 import useFlowStore from '../store/useFlowStore';
 import ScreenShell from './common/ScreenShell';
 import FigmaPrimaryButton from './common/FigmaPrimaryButton';
 import ktxLogo from '../assets/ktx-logo.png';
 import { fetchRoute } from '../api/guide';
+import { fetchPath } from '../api/tickets';
 import { screenConfig, typography } from '../styles/theme';
 import { abs, figma, figmaText } from '../styles/figmaLayout';
+
+const ErrorToast = styled.div`
+  position: absolute;
+  bottom: 100px;
+  left: 16px;
+  right: 16px;
+  background: #FEE2E2;
+  border: 1px solid #FECACA;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-family: ${typography.fontFamily};
+  font-size: 14px;
+  font-weight: 500;
+  color: #B91C1C;
+  text-align: center;
+  z-index: 10;
+  line-height: 1.5;
+`;
 
 function parsePlatformNumber(platform) {
   return platform.replace(/[^0-9]/g, '') || '5';
@@ -20,6 +40,9 @@ function S4_Standby() {
   const {
     ticketInfo,
     reservationId,
+    fromNode,
+    toNode,
+    routeSteps,
     position,
     setStep,
     setRoute,
@@ -38,8 +61,9 @@ function S4_Standby() {
   const loading = localLoading || routeLoading;
 
   const handleStartNavigation = () => {
-    if (!reservationId) {
-      setRouteError('예약 정보가 없습니다. 처음부터 다시 시작해 주세요.');
+    // guide에서 이미 경로를 받아온 경우 바로 이동
+    if (routeSteps.length > 0) {
+      setStep('S5');
       return;
     }
 
@@ -47,17 +71,27 @@ function S4_Standby() {
     setRouteLoading(true);
     setRouteError(null);
 
-    fetchRoute({
-      reservationId,
-      ...(position ? { lat: position.lat, lng: position.lng } : {}),
-    })
+    // 새 백엔드: GET /api/paths?from=xxx&to=xxx
+    // 구 백엔드 fallback: POST /api/v1/guide/routes
+    const pathPromise = fromNode && toNode
+      ? fetchPath({ from: fromNode, to: toNode })
+      : (() => {
+          const effectiveId = reservationId || ticketInfo?.ticketNumber || String(ticketInfo?.ticketId ?? '');
+          if (!effectiveId) return Promise.reject(new Error('경로 정보가 없습니다.'));
+          return fetchRoute({
+            reservationId: effectiveId,
+            ...(position ? { lat: position.lat, lng: position.lng } : {}),
+          });
+        })();
+
+    pathPromise
       .then((route) => {
         setRoute(route);
         setStep('S5');
       })
       .catch((error) => {
-        console.error('[guide/route]', error);
-        setRouteError('경로 정보를 불러오지 못했습니다.');
+        console.error('[route]', error);
+        setStep('E1');
       })
       .finally(() => {
         setLocalLoading(false);
@@ -100,9 +134,7 @@ function S4_Standby() {
       />
 
       {routeError && (
-        <p style={{ ...text(s4.platformLabel), color: '#b91c1c', top: s4.platformLabel.top - 40 }}>
-          {routeError}
-        </p>
+        <ErrorToast role="alert">{routeError}</ErrorToast>
       )}
 
       {s4.carDigits.map((item, i) => (
