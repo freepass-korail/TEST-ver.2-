@@ -5,6 +5,7 @@ import {
   getArrowRotation,
   getBearing,
   getDistanceMeters,
+  OVERSHOOT_THRESHOLD_M,
   STEP_ARRIVAL_RADIUS_M,
 } from '../utils/geo';
 import useDeviceOrientation from './useDeviceOrientation';
@@ -12,8 +13,9 @@ import useGeolocation from './useGeolocation';
 
 function useNavigationTracking({ enabled = true, onArrived } = {}) {
   const hasArrivedRef = useRef(false);
+  const minDistanceRef = useRef(Infinity);
   const { startWatch, stopWatch, error: geoWatchError } = useGeolocation();
-  const { startListening, stopListening } = useDeviceOrientation();
+  const { startListening, stopListening, isSupported: orientationSupported } = useDeviceOrientation();
 
   const mapInstance = useFlowStore((s) => s.mapInstance);
   const setNavigation = useFlowStore((s) => s.setNavigation);
@@ -40,11 +42,22 @@ function useNavigationTracking({ enabled = true, onArrived } = {}) {
       const heading = useFlowStore.getState().heading;
       const destinationAngle = getArrowRotation(bearing, heading);
 
+      // 마지막 노드 지나침 감지: 최소 도달 거리보다 OVERSHOOT_THRESHOLD_M 이상 멀어지면 overshoot
+      if (isLastStep && distanceM < minDistanceRef.current) {
+        minDistanceRef.current = distanceM;
+      }
+      const isOvershoot =
+        isLastStep &&
+        !hasArrivedRef.current &&
+        minDistanceRef.current < OVERSHOOT_THRESHOLD_M &&
+        distanceM > minDistanceRef.current + OVERSHOOT_THRESHOLD_M;
+
       setNavigation({
         position: pos,
         distanceM,
         bearing,
         destinationAngle,
+        overshoot: isOvershoot,
       });
 
       mapInstance?.setMarkerPosition?.(pos.lat, pos.lng);
@@ -84,6 +97,7 @@ function useNavigationTracking({ enabled = true, onArrived } = {}) {
 
   const startTracking = useCallback(() => {
     hasArrivedRef.current = false;
+    minDistanceRef.current = Infinity;
     setNavigation({
       position: null,
       distanceM: null,
@@ -118,7 +132,7 @@ function useNavigationTracking({ enabled = true, onArrived } = {}) {
     setGeoError(geoWatchError);
   }, [geoWatchError, setGeoError]);
 
-  return { startTracking, stopTracking, geoError: geoWatchError };
+  return { startTracking, stopTracking, geoError: geoWatchError, orientationSupported };
 }
 
 export default useNavigationTracking;

@@ -89,6 +89,9 @@ export function getNavigationInstruction(distanceM, instruction) {
   return instruction || '안내 방향으로\n이동해 주세요.';
 }
 
+/** 마지막 노드를 지나쳤다고 볼 최소 거리(m) */
+export const OVERSHOOT_THRESHOLD_M = 15;
+
 export function getGeolocationErrorMessage(code) {
   switch (code) {
     case 1:

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { playBase64Audio } from '../utils/audio';
+import { clearSession, loadSession, saveSession } from '../utils/session';
 
 const emptyTicket = {
   trainName: '',
@@ -24,26 +25,31 @@ function stepToDestination(step) {
   };
 }
 
+const _saved = loadSession();
+
 const useFlowStore = create((set, get) => ({
-  step: 'SMS',
+  step: _saved?.step ?? 'SMS',
   mapInstance: null,
-  voiceGuide: true,
+  voiceGuide: _saved?.voiceGuide ?? true,
 
-  reservationId: null,
-  ticketInfo: { ...emptyTicket },
-  fromNode: null,
-  toNode: null,
+  reservationId: _saved?.reservationId ?? null,
+  ticketInfo: _saved?.ticketInfo ?? { ...emptyTicket },
+  fromNode: _saved?.fromNode ?? null,
+  toNode: _saved?.toNode ?? null,
 
-  routeId: null,
-  routeSteps: [],
-  totalDistanceM: null,
-  currentStepIndex: 0,
-  currentInstruction: '',
+  routeId: _saved?.routeId ?? null,
+  routeSteps: _saved?.routeSteps ?? [],
+  totalDistanceM: _saved?.totalDistanceM ?? null,
+  currentStepIndex: _saved?.currentStepIndex ?? 0,
+  currentInstruction: _saved?.currentInstruction ?? '',
   routeLoading: false,
   routeError: null,
-  audioMap: {},
+  audioMap: _saved?.audioMap ?? {},
 
-  destination: null,
+  destination: (() => {
+    if (!_saved?.routeSteps?.length) return null;
+    return stepToDestination(_saved.routeSteps[_saved.currentStepIndex ?? 0]);
+  })(),
   position: null,
   heading: 0,
   bearing: null,
@@ -51,8 +57,12 @@ const useFlowStore = create((set, get) => ({
   destinationAngle: 0,
   isTracking: false,
   geoError: null,
+  overshoot: false,
 
-  setStep: (nextStep) => set({ step: nextStep }),
+  setStep: (nextStep) => {
+    set({ step: nextStep });
+    saveSession({ ...get(), step: nextStep });
+  },
 
   setReservation: (id, info, fromNode = null, toNode = null) =>
     set({
@@ -83,6 +93,7 @@ const useFlowStore = create((set, get) => ({
       bearing: null,
       destinationAngle: 0,
     });
+    saveSession(get());
   },
 
   getCurrentStep: () => {
@@ -110,6 +121,7 @@ const useFlowStore = create((set, get) => ({
       if (audio) playBase64Audio(audio);
     }
 
+    saveSession(get());
     return true;
   },
 
@@ -135,7 +147,8 @@ const useFlowStore = create((set, get) => ({
     }
   },
 
-  resetFlow: () =>
+  resetFlow: () => {
+    clearSession();
     set({
       step: 'SMS',
       reservationId: null,
@@ -158,7 +171,9 @@ const useFlowStore = create((set, get) => ({
       destinationAngle: 0,
       isTracking: false,
       geoError: null,
-    }),
+      overshoot: false,
+    });
+  },
 }));
 
 export default useFlowStore;

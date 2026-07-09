@@ -213,18 +213,18 @@ export const figma = {
     },
   },
 
-  // E2 2층 이동 안내
+  // E2 3층 이동 안내
   e2: {
     heading: {
-      width: 286,
+      width: 340,
       height: 45,
       top: 214,
-      left: 58,
-      fontSize: 32,
+      left: 31,
+      fontSize: 28,
       fontWeight: 700,
       lineHeight: '140%',
       color: '#000000',
-      text: '2층으로 이동해주세요!',
+      text: '3층으로 이동해주세요!',
     },
     photo: { width: 348, height: 286, top: 299, left: 27, radius: 20 },
     guideText: {
@@ -248,7 +248,7 @@ export const figma = {
       lineHeight: '150%',
       letterSpacing: '1px',
       color: '#FFFFFF',
-      text: '2층으로 올라왔어요',
+      text: '3층으로 올라왔어요',
     },
   },
 

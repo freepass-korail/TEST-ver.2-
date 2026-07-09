@@ -5,6 +5,7 @@ import GeolocationDeniedModal from './common/GeolocationDeniedModal';
 import useNavigationTracking from '../hooks/useNavigationTracking';
 import useFollowAngle from '../hooks/useFollowAngle';
 import useDepartureUrgent from '../hooks/useDepartureUrgent';
+import useDepartureExpired from '../hooks/useDepartureExpired';
 import { DEPARTURE_URGENT_COLOR } from '../utils/time';
 import S5NavigationArrow from './common/S5NavigationArrow';
 import { formatGuideDistance, getCompassDotPosition, getNavigationInstruction } from '../utils/geo';
@@ -16,15 +17,17 @@ function S5_Navigation() {
   const currentInstruction = useFlowStore((s) => s.currentInstruction);
   const routeSteps = useFlowStore((s) => s.routeSteps);
   const setStep = useFlowStore((s) => s.setStep);
+  const resetFlow = useFlowStore((s) => s.resetFlow);
   const distanceM = useFlowStore((s) => s.distanceM);
   const destinationAngle = useFlowStore((s) => s.destinationAngle);
   const geoError = useFlowStore((s) => s.geoError);
   const setGeoError = useFlowStore((s) => s.setGeoError);
   const isTracking = useFlowStore((s) => s.isTracking);
+  const overshoot = useFlowStore((s) => s.overshoot);
 
   const playCurrentStepAudio = useFlowStore((s) => s.playCurrentStepAudio);
 
-  const { stopTracking } = useNavigationTracking({ enabled: routeSteps.length > 0 });
+  const { stopTracking, orientationSupported } = useNavigationTracking({ enabled: routeSteps.length > 0 });
 
   useEffect(() => {
     playCurrentStepAudio();
@@ -35,6 +38,7 @@ function S5_Navigation() {
   const s5 = figma.s5;
   const info = ticketInfo;
   const departureUrgent = useDepartureUrgent(info.departureTime);
+  const departureExpired = useDepartureExpired(info.departureTime);
   const text = (spec) => figmaText(spec, typography.fontFamily);
   const leftText = (spec) => ({
     ...text(spec),
@@ -47,10 +51,10 @@ function S5_Navigation() {
     [distanceM]
   );
 
-  const guideMessage = useMemo(
-    () => getNavigationInstruction(distanceM, currentInstruction),
-    [currentInstruction, distanceM]
-  );
+  const guideMessage = useMemo(() => {
+    if (overshoot) return '지나쳤어요. 뒤로 돌아가세요.';
+    return getNavigationInstruction(distanceM, currentInstruction);
+  }, [currentInstruction, distanceM, overshoot]);
 
   const compass = s5.compass;
   const arrow = s5.arrow;
@@ -173,44 +177,75 @@ function S5_Navigation() {
       />
 
       {/* 방향 화살표 — 원 중앙 고정, 제자리 회전 */}
-      <div
-        aria-hidden
-        style={{
-          ...abs(s5.innerRing),
-          borderRadius: '50%',
-          overflow: 'hidden',
-          pointerEvents: 'none',
-        }}
-      >
+      {orientationSupported ? (
         <div
+          aria-hidden
           style={{
-            position: 'absolute',
-            left: innerLocalCenter,
-            top: innerLocalCenter,
-            width: 0,
-            height: 0,
-            transform: `rotate(${arrowAngle}deg)`,
-            opacity: compassOpacity,
+            ...abs(s5.innerRing),
+            borderRadius: '50%',
+            overflow: 'hidden',
+            pointerEvents: 'none',
           }}
         >
           <div
             style={{
               position: 'absolute',
-              left: 0,
-              top: 0,
-              transform: `translate(-50%, -50%) scale(${arrowScale})`,
-              transformOrigin: 'center center',
+              left: innerLocalCenter,
+              top: innerLocalCenter,
+              width: 0,
+              height: 0,
+              transform: `rotate(${arrowAngle}deg)`,
+              opacity: compassOpacity,
             }}
           >
-            <S5NavigationArrow
-              width={arrow.width}
-              height={arrow.height}
-              strokeWidth={arrow.strokeWidth}
-              color={arrow.color}
-            />
+            <div
+              style={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                transform: `translate(-50%, -50%) scale(${arrowScale})`,
+                transformOrigin: 'center center',
+              }}
+            >
+              <S5NavigationArrow
+                width={arrow.width}
+                height={arrow.height}
+                strokeWidth={arrow.strokeWidth}
+                color={arrow.color}
+              />
+            </div>
           </div>
         </div>
-      </div>
+      ) : (
+        <div
+          style={{
+            ...abs(s5.innerRing),
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexDirection: 'column',
+            gap: 8,
+            background: s5.innerRing.background,
+          }}
+        >
+          <span style={{ fontSize: 36 }}>🗺️</span>
+          <span
+            style={{
+              fontFamily: 'Pretendard, sans-serif',
+              fontSize: 22,
+              fontWeight: 600,
+              color: '#fff',
+              textAlign: 'center',
+              lineHeight: 1.6,
+              whiteSpace: 'pre-line',
+              padding: '0 16px',
+            }}
+          >
+            {'화살표 대신\n글과 음성으로 안내할게요.'}
+          </span>
+        </div>
+      )}
 
       {/* 거리 · 안내 문구 */}
       <div
@@ -289,6 +324,73 @@ function S5_Navigation() {
             setStep('E1');
           }}
         />
+      )}
+
+      {departureExpired && (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: 'rgba(0,0,0,0.6)',
+            zIndex: 60,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '0 32px',
+          }}
+        >
+          <div
+            style={{
+              background: '#fff',
+              borderRadius: 16,
+              padding: '28px 24px 20px',
+              width: '100%',
+              maxWidth: 320,
+              textAlign: 'center',
+            }}
+          >
+            <p
+              style={{
+                fontFamily: 'Pretendard, sans-serif',
+                fontSize: 20,
+                fontWeight: 700,
+                color: '#111',
+                marginBottom: 10,
+              }}
+            >
+              출발 시간이 지났어요.
+            </p>
+            <p
+              style={{
+                fontFamily: 'Pretendard, sans-serif',
+                fontSize: 15,
+                color: '#555',
+                marginBottom: 24,
+                lineHeight: 1.6,
+              }}
+            >
+              안내를 종료합니다.
+            </p>
+            <button
+              type="button"
+              onClick={() => { stopTracking(); resetFlow(); }}
+              style={{
+                width: '100%',
+                padding: '14px 0',
+                background: '#E53935',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 10,
+                fontSize: 16,
+                fontWeight: 600,
+                fontFamily: 'Pretendard, sans-serif',
+                cursor: 'pointer',
+              }}
+            >
+              확인
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

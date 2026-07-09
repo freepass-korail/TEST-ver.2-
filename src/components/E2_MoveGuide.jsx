@@ -16,7 +16,7 @@ function E2_MoveGuide() {
       showHeader={config.showHeader}
       bottomButton={
         <FigmaPrimaryButton onClick={() => setStep('S3')}>
-          2층으로 올라왔어요
+          3층으로 올라왔어요
         </FigmaPrimaryButton>
       }
     >
