@@ -1,11 +1,16 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import useFlowStore from '../store/useFlowStore';
 import ScreenShell from './common/ScreenShell';
 import FigmaPrimaryButton from './common/FigmaPrimaryButton';
 import { screenConfig } from '../styles/theme';
+import { vibrateOnArrival } from '../utils/haptics';
 
 function S1_Join({ dimmed = false }) {
   const { setStep } = useFlowStore();
+
+  useEffect(() => {
+    vibrateOnArrival();
+  }, []);
   const config = screenConfig.S1;
 
   return (
