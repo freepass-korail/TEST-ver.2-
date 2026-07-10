@@ -300,7 +300,7 @@ const UserIdButton = styled.button`
 
 /* ─── 메인 컴포넌트 ─── */
 function SMS_Entry() {
-  const { setStep, setReservation, setAudioMap } = useFlowStore();
+  const { setStep, setReservation, setAudioMap, setScreenTextMap } = useFlowStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [userId, setUserId] = useState('1');
@@ -337,18 +337,22 @@ function SMS_Entry() {
     ])
       .then(([guide, stepsRes]) => {
         setReservation(guide.reservationId, guide.ticket, guide.fromNode, guide.toNode);
-        if (guide.route) {
-          useFlowStore.getState().setRoute(guide.route);
-        }
 
         if (stepsRes?.steps?.length) {
-          const map = {};
+          const audioMap = {};
+          const screenTextMap = {};
           stepsRes.steps.forEach((s) => {
-            if (s.nodeId && s.audioBase64) {
-              map[s.nodeId] = s.audioBase64;
-            }
+            if (!s.nodeId) return;
+            if (s.audioBase64) audioMap[s.nodeId] = s.audioBase64;
+            if (s.screenText) screenTextMap[s.nodeId] = s.screenText;
           });
-          setAudioMap(map);
+          setAudioMap(audioMap);
+          setScreenTextMap(screenTextMap);
+        }
+
+        // screenTextMap 저장 후에 setRoute 호출해야 초기 instruction이 screenText 기준으로 세팅됨
+        if (guide.route) {
+          useFlowStore.getState().setRoute(guide.route);
         }
 
         setStep('S1');

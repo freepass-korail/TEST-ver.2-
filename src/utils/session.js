@@ -12,6 +12,7 @@ const PERSIST_KEYS = [
   'currentStepIndex',
   'currentInstruction',
   'audioMap',
+  'screenTextMap',
   'voiceGuide',
 ];
 
@@ -25,10 +26,10 @@ export function saveSession(state) {
     PERSIST_KEYS.forEach((k) => { snapshot[k] = state[k]; });
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(snapshot));
   } catch {
-    // sessionStorage 용량 초과(audioMap이 클 수 있음) — audioMap 제외하고 재시도
+    // sessionStorage 용량 초과(audioMap/screenTextMap이 클 수 있음) — 제외하고 재시도
     try {
       const snapshot = {};
-      PERSIST_KEYS.filter((k) => k !== 'audioMap').forEach((k) => { snapshot[k] = state[k]; });
+      PERSIST_KEYS.filter((k) => k !== 'audioMap' && k !== 'screenTextMap').forEach((k) => { snapshot[k] = state[k]; });
       sessionStorage.setItem(SESSION_KEY, JSON.stringify(snapshot));
     } catch { /* 저장 실패 무시 */ }
   }

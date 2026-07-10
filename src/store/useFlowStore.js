@@ -45,6 +45,7 @@ const useFlowStore = create((set, get) => ({
   routeLoading: false,
   routeError: null,
   audioMap: _saved?.audioMap ?? {},
+  screenTextMap: _saved?.screenTextMap ?? {},
 
   destination: (() => {
     if (!_saved?.routeSteps?.length) return null;
@@ -77,16 +78,22 @@ const useFlowStore = create((set, get) => ({
 
   setAudioMap: (audioMap) => set({ audioMap }),
 
+  setScreenTextMap: (screenTextMap) => set({ screenTextMap }),
+
   setRoute: (route) => {
     const steps = route?.steps ?? [];
     const first = steps[0] ?? null;
+    const { screenTextMap } = get();
+
+    const firstInstruction =
+      (first?.nodeId && screenTextMap[first.nodeId]) ?? first?.instruction ?? '';
 
     set({
       routeId: route?.routeId ?? null,
       routeSteps: steps,
       totalDistanceM: route?.totalDistanceM ?? null,
       currentStepIndex: 0,
-      currentInstruction: first?.instruction ?? '',
+      currentInstruction: firstInstruction,
       destination: stepToDestination(first),
       routeError: null,
       distanceM: null,
@@ -102,14 +109,18 @@ const useFlowStore = create((set, get) => ({
   },
 
   advanceStep: () => {
-    const { routeSteps, currentStepIndex, audioMap, voiceGuide } = get();
+    const { routeSteps, currentStepIndex, audioMap, screenTextMap, voiceGuide } = get();
     const nextIndex = currentStepIndex + 1;
     if (nextIndex >= routeSteps.length) return false;
 
     const next = routeSteps[nextIndex];
+    const currentNode = routeSteps[currentStepIndex];
+    const nextInstruction =
+      (next?.nodeId && screenTextMap[next.nodeId]) ?? next?.instruction ?? '';
+
     set({
       currentStepIndex: nextIndex,
-      currentInstruction: routeSteps[currentStepIndex]?.instruction ?? '',
+      currentInstruction: nextInstruction,
       destination: stepToDestination(next),
       distanceM: null,
       bearing: null,
@@ -117,7 +128,7 @@ const useFlowStore = create((set, get) => ({
     });
 
     if (voiceGuide) {
-      const audio = audioMap[routeSteps[currentStepIndex]?.nodeId];
+      const audio = audioMap[currentNode?.nodeId];
       if (audio) playBase64Audio(audio);
     }
 
@@ -163,6 +174,7 @@ const useFlowStore = create((set, get) => ({
       routeLoading: false,
       routeError: null,
       audioMap: {},
+      screenTextMap: {},
       destination: null,
       position: null,
       heading: 0,

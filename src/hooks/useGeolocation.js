@@ -1,8 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getDistanceMeters, GEOLOCATION_OPTIONS, getGeolocationErrorMessage, PERMISSION_REQUEST_OPTIONS } from '../utils/geo';
 
-/** 직전 위치 대비 이 거리(m) 이상 순간 이동하면 튐으로 간주해 무시 */
-const GPS_SPIKE_THRESHOLD_M = 150;
+/** 직전 위치 대비 이 거리(m) 이상 순간 이동하면 튐으로 간주
+ *  - 150m 초과 ~ 10000m 미만: 스파이크로 무시
+ *  - 10000m 이상: 멀리서 이동한 것으로 간주하고 허용 (테스트 좌표 입력 포함)
+ */
+const GPS_SPIKE_MIN_M = 150;
+const GPS_SPIKE_MAX_M = 10000;
 
 /** S2 등에서 1회 권한 요청용 */
 export function requestGeolocationPermission(options = PERMISSION_REQUEST_OPTIONS) {
@@ -64,10 +68,14 @@ function useGeolocation() {
               next.lat,
               next.lng
             );
-            if (dist > GPS_SPIKE_THRESHOLD_M) {
-              console.warn(`[GPS] 좌표 튐 감지 (${Math.round(dist)}m) — 무시`);
-              return;
-            }
+                   if (dist >= GPS_SPIKE_MIN_M && dist < GPS_SPIKE_MAX_M) {
+                     console.warn(`[GPS] 좌표 튐 감지 (${Math.round(dist)}m) — 무시`);
+                     return;
+                   }
+                   if (dist >= GPS_SPIKE_MAX_M) {
+                     console.info(`[GPS] 원거리 이동 감지 (${Math.round(dist)}m) — 허용 (테스트/재진입)`);
+                     lastPosRef.current = null;
+                   }
           }
 
           lastPosRef.current = next;
