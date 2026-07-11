@@ -61,6 +61,23 @@ export async function fetchUserGuideSteps(userId, fromNode) {
 }
 
 /**
+ * 텍스트 → 음성 변환 (Google Cloud TTS)
+ * POST /api/tts
+ * @param {string} text
+ * @returns {Promise<string>} base64 MP3
+ */
+export async function fetchTts(text) {
+  if (!text) throw new Error('text가 없습니다.');
+  const data = await apiRequest('/api/tts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  });
+  // 서버가 { audioBase64: "..." } 또는 { audio: "..." } 형태로 반환
+  return data.audioBase64 ?? data.audio ?? data;
+}
+
+/**
  * 두 노드 간 최적 경로 (Dijkstra)
  * GET /api/paths?from={from}&to={to}
  * @param {{ from: string, to: string }} params

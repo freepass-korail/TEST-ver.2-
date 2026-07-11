@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import styled from 'styled-components';
 import useFlowStore from '../store/useFlowStore';
 import { fetchSession, getSessionTokenFromUrl } from '../api/guide';
-import { fetchUserGuide, fetchUserGuideSteps } from '../api/tickets';
+import { fetchUserGuide, fetchUserGuideSteps, fetchTts } from '../api/tickets';
+import { playBase64Audio } from '../utils/audio';
 import { typography } from '../styles/theme';
 
 /* ─── 전체 프레임 ─── */
@@ -358,8 +359,17 @@ function SMS_Entry() {
           useFlowStore.getState().setRoute(guide.route);
         }
 
-        // 경로 없으면 승차권 정보 화면(S4)으로 바로 이동, 있으면 정상 흐름
-        setStep(guide.routeFound ? 'S1' : 'S4');
+        if (!guide.routeFound) {
+          // 경로 없음 — 승차권 화면으로 이동 후 메시지 TTS 재생
+          setStep('S4');
+          const msg = guide.message ?? '승강장 경로 정보를 찾을 수 없습니다.';
+          fetchTts(msg)
+            .then((base64) => { if (base64) playBase64Audio(base64); })
+            .catch((err) => console.warn('[TTS] 메시지 음성 재생 실패:', err));
+          return;
+        }
+
+        setStep('S1');
       })
       .catch((err) => {
         console.error('[users/guide]', err);
