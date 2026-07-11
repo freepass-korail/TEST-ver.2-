@@ -336,6 +336,11 @@ function SMS_Entry() {
       }),
     ])
       .then(([guide, stepsRes]) => {
+        if (!guide.routeFound) {
+          setError(guide.message ?? '승강장 경로 정보를 찾을 수 없습니다.');
+          return;
+        }
+
         setReservation(guide.reservationId, guide.ticket, guide.fromNode, guide.toNode);
 
         if (stepsRes?.steps?.length) {
