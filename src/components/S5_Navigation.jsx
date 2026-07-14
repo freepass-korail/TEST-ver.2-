@@ -459,7 +459,11 @@ function S5_Navigation() {
           s5={s5}
           text={text}
           leftText={leftText}
-          onClose={() => { stopTracking(); resetFlow(); }}
+          onClose={() => {
+            if (USE_WALK_STREAM) stopStream();
+            else stopTracking();
+            resetFlow();
+          }}
         />
       )}
     </div>
