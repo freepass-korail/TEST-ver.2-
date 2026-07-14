@@ -1,115 +1,213 @@
 import React from 'react';
 import useFlowStore from '../store/useFlowStore';
-import ScreenShell from './common/ScreenShell';
+import FigmaHeader from './common/FigmaHeader';
 import FigmaPrimaryButton from './common/FigmaPrimaryButton';
-import { screenConfig, typography } from '../styles/theme';
-import { abs, figma, figmaText } from '../styles/figmaLayout';
+import { typography } from '../styles/theme';
+
+const FF = typography.fontFamily;
+
+const DAY_NAMES = ['일', '월', '화', '수', '목', '금', '토'];
+
+function formatKoreanDate(isoStr) {
+  if (!isoStr) return '';
+  const d = new Date(isoStr);
+  if (isNaN(d.getTime())) return '';
+  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 (${DAY_NAMES[d.getDay()]})`;
+}
+
+function extractTrainNumber(trainNo, trainName) {
+  if (!trainNo) return '';
+  const num = trainNo.replace(/^[A-Za-z]+/, '');
+  return num ? `${trainName} ${num}` : trainName;
+}
 
 function E1_StaticGuide() {
-  const { ticketInfo, setStep } = useFlowStore();
-  const config = screenConfig.E1;
-  const e1 = figma.e1;
+  const { ticketInfo, routeSteps, setStep } = useFlowStore();
   const info = ticketInfo;
-  const text = (spec) => figmaText(spec, typography.fontFamily);
+
+  const dateLabel = formatKoreanDate(info.depTimeRaw) || info.travelDate;
+  const trainLabel = extractTrainNumber(info.trainNo, info.trainName) || info.trainName;
+  const hasRoute = routeSteps.length > 0;
 
   return (
-    <ScreenShell
-      showHeader={config.showHeader}
-      bottomButton={
-        <FigmaPrimaryButton onClick={() => setStep('S4')}>안내 시작</FigmaPrimaryButton>
-      }
-    >
-      {/* 일정 카드 배경 */}
-      <div
-        style={{
-          ...abs(e1.scheduleCard),
-          borderRadius: e1.scheduleCard.radius,
-          background: e1.scheduleCard.background,
-        }}
-      />
+    <div style={{ position: 'relative', width: '100%', height: '100%', background: '#FFFFFF', overflow: 'hidden' }}>
+      <FigmaHeader />
 
-      {/* 역·시간 영역 */}
-      <div
-        style={{
-          ...abs(e1.routePanel),
-          borderRadius: e1.routePanel.radius,
-          background: e1.routePanel.background,
-        }}
-      />
+      {/* 카드 배경 */}
+      <div style={{
+        position: 'absolute', top: 195, left: 27, width: 348, height: 479,
+        borderRadius: 10, background: '#FAFAFB',
+        boxShadow: '0px 5px 15px 0px #00000059',
+      }} />
 
-      <p style={text(e1.travelDate)}>{info.travelDate}</p>
-      <p style={text(e1.departureStation)}>{info.departureStation}</p>
-      <svg
-        aria-hidden
-        style={{
-          position: 'absolute',
-          top: e1.routeLine.top - 6,
-          left: e1.routeLine.left,
-          width: e1.routeLine.width,
-          height: 12,
-          overflow: 'visible',
-        }}
-        viewBox={`0 0 ${e1.routeLine.width} 12`}
-      >
-        <line
-          x1="0"
-          y1="6"
-          x2="32"
-          y2="6"
-          stroke="#000000"
-          strokeWidth="2"
-          strokeLinecap="round"
-        />
-        <polygon points="32,0 50,6 32,12" fill="#000000" />
-      </svg>
-      <p style={{ ...text(e1.arrivalStation), whiteSpace: 'nowrap' }}>{info.arrivalStation}</p>
-      <p style={text(e1.departureTime)}>{info.departureTime}</p>
-      <p style={text(e1.arrivalTime)}>{info.arrivalTime}</p>
+      {/* 파란 헤더 바 */}
+      <div style={{
+        position: 'absolute', top: 195, left: 27, width: 348, height: 54,
+        borderTopLeftRadius: 10, borderTopRightRadius: 10,
+        background: '#286EF0',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <span style={{
+          fontFamily: FF, fontSize: 24, fontWeight: 700,
+          lineHeight: '140%', color: '#FFFFFF', letterSpacing: 0,
+        }}>
+          {dateLabel}
+        </span>
+      </div>
 
-      <p style={text(e1.trainName)}>{info.trainName}</p>
-
-      {/* 승차 정보 카드 */}
-      <div
-        style={{
-          ...abs(e1.ticketCard),
-          borderRadius: e1.ticketCard.radius,
-          background: e1.ticketCard.background,
-        }}
-      />
-
-      <p style={text(e1.platformLabel)}>타는곳</p>
-      <p style={text(e1.carLabel)}>호차번호</p>
-      <p style={text(e1.seatLabel)}>좌석번호</p>
-
-      <p style={text(e1.platformValue)}>{info.platform}</p>
-      <p style={text(e1.carValue)}>{info.carNumber}</p>
-      <p style={text(e1.seatValue)}>{info.seatNumber}</p>
-
-      {e1.dividers.map((line, i) => (
-        <div
-          key={i}
-          style={{
-            position: 'absolute',
-            top: line.top,
-            left: line.left,
-            width: 0,
-            height: line.height,
-            borderLeft: line.border,
-          }}
-        />
-      ))}
-
-      <p style={{ ...text(e1.seatClass), textAlign: 'left', justifyContent: 'flex-start' }}>
-        {info.seatClass}
+      {/* 출발역 */}
+      <p style={{
+        position: 'absolute', top: 274, left: 81, width: 70, height: 56, margin: 0,
+        fontFamily: FF, fontSize: 40, fontWeight: 700, lineHeight: '140%',
+        color: '#000000', textAlign: 'center',
+      }}>
+        {info.departureStation}
       </p>
 
-      <p style={{ ...text(e1.ticketNumberLabel), textAlign: 'left', justifyContent: 'flex-start' }}>
+      {/* 출발 시간 */}
+      <p style={{
+        position: 'absolute', top: 332, left: 63, width: 106, height: 56, margin: 0,
+        fontFamily: FF, fontSize: 40, fontWeight: 600, lineHeight: '140%',
+        color: 'rgba(0,0,0,0.7)', textAlign: 'center',
+      }}>
+        {info.departureTime}
+      </p>
+
+      {/* 화살표 */}
+      <svg
+        style={{ position: 'absolute', top: 280, left: 179 }}
+        width="88" height="40" viewBox="0 0 88 40"
+        fill="none" xmlns="http://www.w3.org/2000/svg"
+      >
+        <defs>
+          <linearGradient id="arrowGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="#286EF0" stopOpacity="0" />
+            <stop offset="100%" stopColor="#286EF0" stopOpacity="1" />
+          </linearGradient>
+        </defs>
+        <polygon points="0,0 88,20 0,40" fill="url(#arrowGrad)" />
+      </svg>
+
+      {/* 도착역 */}
+      <p style={{
+        position: 'absolute', top: 274, left: 251, width: 70, height: 56, margin: 0,
+        fontFamily: FF, fontSize: 40, fontWeight: 700, lineHeight: '140%',
+        color: '#000000', textAlign: 'center', whiteSpace: 'nowrap',
+      }}>
+        {info.arrivalStation}
+      </p>
+
+      {/* 도착 시간 */}
+      <p style={{
+        position: 'absolute', top: 332, left: 229, width: 112, height: 56, margin: 0,
+        fontFamily: FF, fontSize: 40, fontWeight: 600, lineHeight: '140%',
+        color: 'rgba(0,0,0,0.7)', textAlign: 'center',
+      }}>
+        {info.arrivalTime}
+      </p>
+
+      {/* KTX 열차 밴드 */}
+      <div style={{
+        position: 'absolute', top: 404, left: 34, width: 334, height: 50,
+        background: '#286EF01A',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <span style={{
+          fontFamily: FF, fontSize: 24, fontWeight: 700,
+          lineHeight: '140%', color: '#000000',
+        }}>
+          {trainLabel}
+        </span>
+      </div>
+
+      {/* 타는곳/호차번호/좌석번호 통합 컨테이너 */}
+      <div style={{
+        position: 'absolute', top: 472, left: 34, width: 334, height: 131,
+        borderTop: '1px solid #44444480',
+        borderBottom: '1px solid #44444480',
+        display: 'flex', flexDirection: 'column',
+        overflow: 'hidden',
+      }}>
+        {/* 레이블 행 — 53px, #D0DEF9 배경 */}
+        <div style={{
+          height: 53, background: '#D0DEF9',
+          display: 'flex', alignItems: 'center',
+          borderBottom: '1px solid #44444480',
+        }}>
+          <div style={{ width: 107, textAlign: 'center' }}>
+            <span style={{ fontFamily: FF, fontSize: 24, fontWeight: 700, color: '#0D111D' }}>타는곳</span>
+          </div>
+          <div style={{ width: 0, height: '100%', borderLeft: '1px solid #44444480' }} />
+          <div style={{ width: 120, textAlign: 'center' }}>
+            <span style={{ fontFamily: FF, fontSize: 24, fontWeight: 700, color: '#0D111D' }}>호차번호</span>
+          </div>
+          <div style={{ width: 0, height: '100%', borderLeft: '1px solid #44444480' }} />
+          <div style={{ flex: 1, textAlign: 'center' }}>
+            <span style={{ fontFamily: FF, fontSize: 24, fontWeight: 700, color: '#0D111D' }}>좌석번호</span>
+          </div>
+        </div>
+
+        {/* 값 행 — 나머지 높이 */}
+        <div style={{
+          flex: 1,
+          display: 'flex', alignItems: 'center',
+        }}>
+          <div style={{ width: 107, textAlign: 'center' }}>
+            <span style={{ fontFamily: FF, fontSize: 32, fontWeight: 700, color: '#286EF0' }}>{info.platform}번</span>
+          </div>
+          <div style={{ width: 0, height: '100%', borderLeft: '1px solid #44444480' }} />
+          <div style={{ width: 120, textAlign: 'center' }}>
+            <span style={{ fontFamily: FF, fontSize: 32, fontWeight: 700, color: '#286EF0' }}>{info.carNumber}호차</span>
+          </div>
+          <div style={{ width: 0, height: '100%', borderLeft: '1px solid #44444480' }} />
+          <div style={{ flex: 1, textAlign: 'center' }}>
+            <span style={{ fontFamily: FF, fontSize: 32, fontWeight: 700, color: '#286EF0' }}>{info.seatNumber}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 일반실 | 순방향 | 경로할인 */}
+      <p style={{
+        position: 'absolute', top: 615, left: 40, width: 154, height: 21, margin: 0,
+        fontFamily: FF, fontSize: 15, fontWeight: 500, lineHeight: '140%',
+        color: '#818181',
+      }}>
+        {info.seatClass || '일반실'}
+      </p>
+
+      {/* 승차권번호 레이블 */}
+      <p style={{
+        position: 'absolute', top: 642, left: 40, width: 65, height: 21, margin: 0,
+        fontFamily: FF, fontSize: 15, fontWeight: 500, lineHeight: '140%',
+        color: '#818181',
+      }}>
         승차권번호
       </p>
-      <p style={{ ...text(e1.ticketNumberValue), textAlign: 'right', justifyContent: 'flex-end' }}>
+
+      {/* 승차권번호 값 */}
+      <p style={{
+        position: 'absolute', top: 642, left: 194, width: 168, height: 21, margin: 0,
+        fontFamily: FF, fontSize: 15, fontWeight: 500, lineHeight: '140%',
+        color: '#818181', textAlign: 'right',
+      }}>
         {info.ticketNumber}
       </p>
-    </ScreenShell>
+
+      {/* 면책 문구 */}
+      <p style={{
+        position: 'absolute', top: 701, left: 87, width: 228, height: 34, margin: 0,
+        fontFamily: FF, fontSize: 12, fontWeight: 500, lineHeight: '140%',
+        color: '#818181', textAlign: 'center', whiteSpace: 'pre-line',
+        letterSpacing: '-0.02em',
+      }}>
+        {'*본 정보는 실제 티켓을 대신할 수 없습니다.\n검표 시, 실물 티켓 및 모바일 티켓을 확인해주세요.'}
+      </p>
+
+      {/* 안내 시작 버튼 */}
+      {hasRoute && (
+        <FigmaPrimaryButton onClick={() => setStep('S4')}>안내 시작</FigmaPrimaryButton>
+      )}
+    </div>
   );
 }
 

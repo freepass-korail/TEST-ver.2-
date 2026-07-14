@@ -12,6 +12,102 @@ import { formatGuideDistance, getCompassDotPosition, getNavigationInstruction } 
 import { typography } from '../styles/theme';
 import { abs, figma, figmaText } from '../styles/figmaLayout';
 
+const FF = typography.fontFamily;
+const GREEN = '#3FAD62';
+
+function CheckIcon({ size = 184 }) {
+  const r = size / 2;
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: '50%', background: '#FFFFFF',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+    }}>
+      <svg width={size * 0.65} height={size * 0.6} viewBox="0 0 120 110" fill="none">
+        <path d="M12 46L38 72L87 18" stroke={GREEN} strokeWidth={18} strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </div>
+  );
+}
+
+function DepartureExpiredOverlay({ info, s5, text, leftText, onClose }) {
+  return (
+    <div style={{
+      position: 'absolute', inset: 0, zIndex: 60,
+      background: GREEN, overflow: 'hidden',
+    }}>
+      {/* 상단 출발 시간 카드 */}
+      <div style={{ ...abs(s5.timeCard), borderRadius: s5.timeCard.radius, background: s5.timeCard.background }} />
+      <p style={leftText(s5.timeLabel)}>기차 출발 시간</p>
+      <p style={leftText(s5.timeValue)}>{info.departureTime}</p>
+
+      {/* 상단 승차 정보 카드 */}
+      <div style={{ ...abs(s5.ticketCard), borderRadius: s5.ticketCard.radius, background: s5.ticketCard.background }} />
+      <p style={{ ...text(s5.route), whiteSpace: 'nowrap', fontSize: 16 }}>{`${info.departureStation}→${info.arrivalStation}`}</p>
+      <p style={text(s5.trainName)}>{info.trainName}</p>
+      <p style={text(s5.platformLabel)}>타는곳</p>
+      <p style={text(s5.carLabel)}>호차번호</p>
+      <p style={text(s5.seatLabel)}>좌석번호</p>
+      <p style={{ ...text(s5.platformValue), whiteSpace: 'nowrap' }}>{info.platform}</p>
+      <p style={{ ...text(s5.carValue), whiteSpace: 'nowrap' }}>{info.carNumber}</p>
+      <p style={{ ...text(s5.seatValue), whiteSpace: 'nowrap' }}>{info.seatNumber}</p>
+      {s5.dividers.map((line, i) => (
+        <div key={i} style={{ position: 'absolute', top: line.top, left: line.left, width: 0, height: line.height, borderLeft: line.border }} />
+      ))}
+
+      {/* 리플 링 */}
+      {[
+        { width: 362, height: 362, top: 208, left: 20 },
+        { width: 283, height: 283, top: 247, left: 59 },
+      ].map((ring, i) => (
+        <div key={i} style={{
+          position: 'absolute', top: ring.top, left: ring.left,
+          width: ring.width, height: ring.height,
+          borderRadius: '50%', background: '#FFFFFF26',
+        }} />
+      ))}
+
+      {/* 체크 원 */}
+      <div style={{ position: 'absolute', top: 294, left: 109 }}>
+        <CheckIcon size={184} />
+      </div>
+
+      {/* 제목 */}
+      <p style={{
+        position: 'absolute', top: 590, left: 40, width: 177, height: 67,
+        fontFamily: FF, fontSize: 48, fontWeight: 800, color: '#FFFFFF',
+        lineHeight: '140%', letterSpacing: 0, margin: 0,
+        display: 'flex', alignItems: 'center',
+      }}>
+        열차 출발
+      </p>
+
+      {/* 설명 */}
+      <p style={{
+        position: 'absolute', top: 667, left: 40, width: 280, height: 90,
+        fontFamily: FF, fontSize: 32, fontWeight: 600, color: '#FFFFFF',
+        lineHeight: '140%', letterSpacing: 0, margin: 0, whiteSpace: 'pre-line',
+      }}>
+        {'출발 시간이 지났어요.\n안내를 종료할게요.'}
+      </p>
+
+      {/* 닫기 */}
+      <button
+        type="button"
+        aria-label="안내 종료"
+        onClick={onClose}
+        style={{
+          position: 'absolute', top: 765, left: 301,
+          width: 70, height: 70, borderRadius: '50%',
+          background: '#FFFFFF40', border: 'none',
+          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}
+      >
+        <img src={closeIconSvg} alt="닫기" style={{ width: 28, height: 28 }} />
+      </button>
+    </div>
+  );
+}
+
 function S5_Navigation() {
   const ticketInfo = useFlowStore((s) => s.ticketInfo);
   const currentInstruction = useFlowStore((s) => s.currentInstruction);
@@ -52,7 +148,7 @@ function S5_Navigation() {
   );
 
   const guideMessage = useMemo(() => {
-    if (overshoot) return '지나쳤어요. 뒤로 돌아가세요.';
+    if (overshoot) return '지나쳤어요.\n뒤로 돌아가세요.';
     return getNavigationInstruction(distanceM, currentInstruction);
   }, [currentInstruction, distanceM, overshoot]);
 
@@ -251,7 +347,16 @@ function S5_Navigation() {
           {distanceDisplay.unit}
         </span>
       </div>
-      <p style={{ ...text(s5.guideText), textAlign: 'center', left: '50%', transform: 'translateX(-50%)', whiteSpace: 'pre-line', wordBreak: 'keep-all' }}>{guideMessage}</p>
+      <p style={
+        overshoot
+          ? {
+              position: 'absolute', top: 667, left: 40, width: 217, height: 90,
+              fontFamily: typography.fontFamily, fontSize: 32, fontWeight: 600,
+              lineHeight: '140%', letterSpacing: 0,
+              color: '#FFFFFF', margin: 0, whiteSpace: 'pre-line',
+            }
+          : { ...text(s5.guideText), textAlign: 'center', left: '50%', transform: 'translateX(-50%)', whiteSpace: 'pre-line', wordBreak: 'keep-all' }
+      }>{guideMessage}</p>
 
       {/* 닫기 */}
       <button
@@ -296,70 +401,13 @@ function S5_Navigation() {
       )}
 
       {departureExpired && (
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            background: 'rgba(0,0,0,0.6)',
-            zIndex: 60,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '0 32px',
-          }}
-        >
-          <div
-            style={{
-              background: '#fff',
-              borderRadius: 16,
-              padding: '28px 24px 20px',
-              width: '100%',
-              maxWidth: 320,
-              textAlign: 'center',
-            }}
-          >
-            <p
-              style={{
-                fontFamily: 'Pretendard, sans-serif',
-                fontSize: 20,
-                fontWeight: 700,
-                color: '#111',
-                marginBottom: 10,
-              }}
-            >
-              출발 시간이 지났어요.
-            </p>
-            <p
-              style={{
-                fontFamily: 'Pretendard, sans-serif',
-                fontSize: 15,
-                color: '#555',
-                marginBottom: 24,
-                lineHeight: 1.6,
-              }}
-            >
-              안내를 종료합니다.
-            </p>
-            <button
-              type="button"
-              onClick={() => { stopTracking(); resetFlow(); }}
-              style={{
-                width: '100%',
-                padding: '14px 0',
-                background: '#E53935',
-                color: '#fff',
-                border: 'none',
-                borderRadius: 10,
-                fontSize: 16,
-                fontWeight: 600,
-                fontFamily: 'Pretendard, sans-serif',
-                cursor: 'pointer',
-              }}
-            >
-              확인
-            </button>
-          </div>
-        </div>
+        <DepartureExpiredOverlay
+          info={info}
+          s5={s5}
+          text={text}
+          leftText={leftText}
+          onClose={() => { stopTracking(); resetFlow(); }}
+        />
       )}
     </div>
   );

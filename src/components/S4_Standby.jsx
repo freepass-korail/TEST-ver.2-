@@ -1,13 +1,38 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import useFlowStore from '../store/useFlowStore';
-import ScreenShell from './common/ScreenShell';
+import FigmaHeader from './common/FigmaHeader';
 import FigmaPrimaryButton from './common/FigmaPrimaryButton';
-import ktxLogo from '../assets/KTX .svg';
 import { fetchRoute } from '../api/guide';
 import { fetchPath } from '../api/tickets';
-import { screenConfig, typography } from '../styles/theme';
-import { abs, figma, figmaText } from '../styles/figmaLayout';
+import { typography } from '../styles/theme';
+
+import logoKtx        from '../assets/ktx-logo.png';
+import logoMugunghwa  from '../assets/train-mugunghwa.png';
+import logoItx        from '../assets/train-itx.png';
+import logoNuriro     from '../assets/train-nuriro.png';
+import logoItxCheong  from '../assets/train-itx-cheongchun.png';
+import logoItxSaemaul from '../assets/train-itx-saemaul.png';
+
+const TRAIN_LOGO_MAP = [
+  { keys: ['ktx'],            logo: logoKtx },
+  { keys: ['무궁화'],          logo: logoMugunghwa },
+  { keys: ['itx-청춘','itx 청춘','청춘'], logo: logoItxCheong },
+  { keys: ['itx-새마을','itx 새마을','새마을'], logo: logoItxSaemaul },
+  { keys: ['itx'],            logo: logoItx },
+  { keys: ['누리로'],          logo: logoNuriro },
+];
+
+function getTrainLogo(trainName) {
+  if (!trainName) return logoKtx;
+  const lower = trainName.toLowerCase().replace(/\s+/g, ' ').trim();
+  for (const { keys, logo } of TRAIN_LOGO_MAP) {
+    if (keys.some((k) => lower.includes(k))) return logo;
+  }
+  return logoKtx;
+}
+
+const FF = typography.fontFamily;
 
 const ErrorToast = styled.div`
   position: absolute;
@@ -18,7 +43,7 @@ const ErrorToast = styled.div`
   border: 1px solid #FECACA;
   border-radius: 12px;
   padding: 12px 16px;
-  font-family: ${typography.fontFamily};
+  font-family: ${FF};
   font-size: 14px;
   font-weight: 500;
   color: #B91C1C;
@@ -29,11 +54,6 @@ const ErrorToast = styled.div`
 
 function parsePlatformNumber(platform) {
   return platform.replace(/[^0-9]/g, '') || '5';
-}
-
-function parseCarDigits(carNumber) {
-  const digits = carNumber.replace(/[^0-9]/g, '').split('');
-  return digits.length ? digits : ['1', '2'];
 }
 
 function S4_Standby() {
@@ -52,28 +72,19 @@ function S4_Standby() {
     setRouteError,
   } = useFlowStore();
   const [localLoading, setLocalLoading] = useState(false);
-  const config = screenConfig.S4;
-  const s4 = figma.s4;
   const info = ticketInfo;
-  const text = (spec) => figmaText(spec, typography.fontFamily);
   const platformNum = parsePlatformNumber(info.platform);
-  const carDigits = parseCarDigits(info.carNumber);
+  const trainLogo = getTrainLogo(info.trainName);
   const loading = localLoading || routeLoading;
   const noRoute = !fromNode && !toNode && routeSteps.length === 0;
 
   const handleStartNavigation = () => {
-    // guide에서 이미 경로를 받아온 경우 바로 이동
-    if (routeSteps.length > 0) {
-      setStep('S5');
-      return;
-    }
+    if (routeSteps.length > 0) { setStep('S5'); return; }
 
     setLocalLoading(true);
     setRouteLoading(true);
     setRouteError(null);
 
-    // 새 백엔드: GET /api/paths?from=xxx&to=xxx
-    // 구 백엔드 fallback: POST /api/v1/guide/routes
     const pathPromise = fromNode && toNode
       ? fetchPath({ from: fromNode, to: toNode })
       : (() => {
@@ -86,71 +97,98 @@ function S4_Standby() {
         })();
 
     pathPromise
-      .then((route) => {
-        setRoute(route);
-        setStep('S5');
-      })
-      .catch((error) => {
-        console.error('[route]', error);
-        setStep('E1');
-      })
-      .finally(() => {
-        setLocalLoading(false);
-        setRouteLoading(false);
-      });
+      .then((route) => { setRoute(route); setStep('S5'); })
+      .catch((error) => { console.error('[route]', error); setStep('E1'); })
+      .finally(() => { setLocalLoading(false); setRouteLoading(false); });
   };
 
   return (
-    <ScreenShell
-      showHeader={config.showHeader}
-      bottomButton={
-        <FigmaPrimaryButton onClick={handleStartNavigation} disabled={loading || noRoute}>
-          {loading ? '경로 불러오는 중…' : noRoute ? '승강장 경로 정보 없음' : '길찾기 시작'}
-        </FigmaPrimaryButton>
-      }
-    >
-      <p style={text(s4.platformLabel)}>타는 곳</p>
+    <div style={{ position: 'relative', width: '100%', height: '100%', background: '#FFFFFF', overflow: 'hidden' }}>
+      <FigmaHeader />
 
-      <div
-        style={{
-          ...abs(s4.platformCircle),
-          borderRadius: s4.platformCircle.radius,
-          background: s4.platformCircle.background,
-        }}
-      />
+      {/* ── 카드 1: 타는 곳 ── */}
+      {/* 카드 배경 */}
+      <div style={{
+        position: 'absolute', top: 199, left: 48, width: 306, height: 235,
+        borderRadius: 10, background: '#FAFAFB',
+        boxShadow: '0px 5px 15px 0px #00000059',
+      }} />
 
-      <p style={text(s4.platformNumber)}>{platformNum}</p>
-      <p style={text(s4.platformSuffix)}>번</p>
+      {/* 파란 헤더 */}
+      <div style={{
+        position: 'absolute', top: 199, left: 48, width: 306, height: 60,
+        borderTopLeftRadius: 10, borderTopRightRadius: 10,
+        background: '#286EF0',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <span style={{ fontFamily: FF, fontSize: 36, fontWeight: 700, color: '#FFFFFF', lineHeight: '140%' }}>
+          타는 곳
+        </span>
+      </div>
 
-      <p style={text(s4.carLabel)}>호차번호</p>
+      {/* 플랫폼 번호 */}
+      <div style={{
+        position: 'absolute', top: 278, left: 48, width: 306, height: 156,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
+      }}>
+        <span style={{ fontFamily: FF, fontSize: 96, fontWeight: 700, color: '#286EF0', lineHeight: '140%' }}>
+          {platformNum}
+        </span>
+        <span style={{ fontFamily: FF, fontSize: 36, fontWeight: 700, color: '#44444499', lineHeight: '140%', alignSelf: 'flex-end', marginBottom: 28 }}>
+          번
+        </span>
+      </div>
 
+      {/* ── 카드 2: 호차번호 ── */}
+      {/* 카드 배경 */}
+      <div style={{
+        position: 'absolute', top: 474, left: 48, width: 306, height: 235,
+        borderRadius: 10, background: '#FAFAFB',
+        boxShadow: '0px 5px 15px 0px #00000059',
+      }} />
+
+      {/* 파란 헤더 */}
+      <div style={{
+        position: 'absolute', top: 474, left: 48, width: 306, height: 60,
+        borderTopLeftRadius: 10, borderTopRightRadius: 10,
+        background: '#286EF0',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <span style={{ fontFamily: FF, fontSize: 36, fontWeight: 700, color: '#FFFFFF', lineHeight: '140%', letterSpacing: 2 }}>
+          호차번호
+        </span>
+      </div>
+
+      {/* 열차 로고 */}
       <img
-        src={ktxLogo}
-        alt="KTX"
+        src={trainLogo}
+        alt={info.trainName}
         draggable={false}
         style={{
-          ...abs(s4.ktxLogo),
-          objectFit: 'contain',
+          position: 'absolute', top: 586, left: 95,
+          width: 140, height: 46, objectFit: 'contain',
         }}
       />
 
-      {routeError && (
-        <ErrorToast role="alert">{routeError}</ErrorToast>
-      )}
+      {/* 호차 번호 원형 뱃지 */}
+      <div style={{
+        position: 'absolute', top: 577, left: 243,
+        width: 65, height: 64, borderRadius: 32.5,
+        background: '#144999',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        <span style={{ fontFamily: FF, fontSize: 36, fontWeight: 700, color: '#FFFFFF' }}>
+          {info.carNumber}
+        </span>
+      </div>
 
-      {s4.carDigits.map((item, i) => (
-        <React.Fragment key={i}>
-          <div
-            style={{
-              ...abs(item.circle),
-              borderRadius: '50%',
-              background: item.circle.background,
-            }}
-          />
-          <p style={text(item.digit)}>{carDigits[i] ?? ''}</p>
-        </React.Fragment>
-      ))}
-    </ScreenShell>
+      {routeError && <ErrorToast role="alert">{routeError}</ErrorToast>}
+
+      {/* 길찾기 시작 버튼 */}
+      <FigmaPrimaryButton onClick={handleStartNavigation} disabled={loading || noRoute}>
+        {loading ? '경로 불러오는 중…' : noRoute ? '승강장 경로 정보 없음' : '길찾기 시작'}
+      </FigmaPrimaryButton>
+    </div>
   );
 }
 

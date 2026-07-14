@@ -15,6 +15,13 @@ import S5_Navigation from './components/S5_Navigation';
 import S5_1_Arrived from './components/S5_1_Arrived';
 import E1_StaticGuide from './components/E1_StaticGuide';
 import E2_MoveGuide from './components/E2_MoveGuide';
+import S5_2_AltRoute from './components/S5_2_AltRoute';
+import S5_3_Elevator from './components/S5_3_Elevator';
+import E3_NoTicket from './components/E3_NoTicket';
+import E4_Departed from './components/E4_Departed';
+import E5_GuideDone from './components/E5_GuideDone';
+import E6_Refunded from './components/E6_Refunded';
+import NetworkOfflineOverlay from './components/common/NetworkOfflineOverlay';
 
 function App() {
   const { step, setStep, setReservation } = useFlowStore();
@@ -52,6 +59,18 @@ function App() {
         return <S5_Navigation />;
       case 'S5_1':
         return <S5_1_Arrived />;
+      case 'S5_2':
+        return <S5_2_AltRoute />;
+      case 'S5_3':
+        return <S5_3_Elevator />;
+      case 'E3':
+        return <E3_NoTicket />;
+      case 'E4':
+        return <E4_Departed />;
+      case 'E5':
+        return <E5_GuideDone />;
+      case 'E6':
+        return <E6_Refunded />;
       case 'E1':
         return <E1_StaticGuide />;
       case 'E2':
@@ -101,6 +120,8 @@ function App() {
         >
           {renderStepComponent()}
         </div>
+
+        <NetworkOfflineOverlay />
       </Layout>
     </>
   );

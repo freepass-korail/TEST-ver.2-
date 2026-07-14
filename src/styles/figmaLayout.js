@@ -3,13 +3,13 @@
 export const figma = {
   screen: { width: 402, height: 874 },
 
-  logo: { width: 162, height: 39, top: 87, left: 20 },
+  logo: { width: 130, height: 32, top: 91, left: 136 },
 
   serviceName: {
     width: 148,
     height: 28,
     top: 124,
-    left: 20,
+    left: 127,
     fontSize: 20,
     fontWeight: 700,
     lineHeight: '140%',
