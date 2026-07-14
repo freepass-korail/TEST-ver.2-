@@ -2,7 +2,7 @@
 
 코레일 역 내부 경로 안내 **프론트엔드**. SMS 링크 또는 사용자 ID로 서비스에 진입하고, **백엔드가 내려준 경로(route)** 를 따라 GPS·기기 방향 센서로 실시간 안내하는 것을 목표로 한다.
 
-**라이브 데모:** [https://fe-be-three.vercel.app/](https://fe-be-three.vercel.app/)
+**라이브 데모:** [https://fe-be-2.vercel.app/](https://fe-be-2.vercel.app/)
 
 ---
 
@@ -24,11 +24,17 @@
 
 | 메서드 | 경로 | 설명 |
 |--------|------|------|
-| GET | `/api/users/{userId}/guide` | 오늘 승차권 + 승강장까지 최적 경로 반환 |
+| GET | `/api/users/{userId}/guide?fromNode=` | 오늘 승차권 + 승강장까지 최적 경로 반환 |
+| GET | `/api/users/{userId}/guide/steps?fromNode=` | 단계별 안내 (`screenText`, `voiceText`, `audioBase64`) |
+| GET | `/api/users/{userId}/guide/walk?fromNode=&jitterM=` | 배치 자동 보행 + 노드별 가이드/TTS |
+| GET | `/api/users/{userId}/guide/walk/stream?fromNode=&intervalMs=&jitterM=` | SSE 보행 (`step` / `done` / `info`) |
+| GET | `/api/users/{userId}/guide/simulate?steps=&heading=&stepLength=&lastStepSeq=` | 만보기 시뮬레이션 (step 변경 시 audio) |
+| GET | `/api/users/{userId}/guide/route-points?fromNode=` | 리플레이용 상대 좌표 |
 | GET | `/api/users/{userId}/tickets` | 유저 승차권 목록 (출발 시각 내림차순) |
 | GET | `/api/tickets` | 전체 승차권 조회 (`?userId=` 필터 가능) |
 | GET | `/api/tickets/{ticketId}` | 승차권 단건 조회 |
 | GET | `/api/paths?from=&to=` | 두 노드 간 최적 경로 (Dijkstra) |
+| GET | `/api/tts?text=` | TTS 음성 생성 |
 
 ### GuideResponse 주요 필드
 
@@ -45,6 +51,16 @@
 }
 ```
 
+### Guide steps / walk 예시 필드
+
+```json
+{
+  "nodeId": "n02",
+  "screenText": "에스컬레이터로 내려가세요",
+  "voiceText": "에스컬레이터로 내려가세요",
+  "audioBase64": "..."
+}
+```
 ---
 
 ## 역할 분담 (프론트 ↔ 백엔드)
@@ -65,6 +81,8 @@
 - SMS 진입 화면 (`SMS_Entry`) — userId 입력 또는 URL `?token=` 기반 진입
 - 화면 흐름 (Zustand `step`) — SMS → S1 → S2 → S3 → S4 → S5 → S5_1
 - 새 백엔드 API 연동 — `tickets.js` (`fetchUserGuide`, `fetchUserTickets`, `fetchPath` 등)
+- Guide TTS API 클라이언트 — `fetchUserGuideSteps`, `fetchGuideWalk`, `openGuideWalkStream`, `fetchGuideSimulate`, `fetchGuideRoutePoints`
+- Guide/steps·walk·simulate·route-points 응답 정규화 (`screenText`, `voiceText`, `audioBase64`)
 - GuideResponse 정규화 — `fromNode`, `platformNode`, `routeFound`, `hasTicketToday` 처리
 - S4 **길찾기 시작** → `GET /api/paths` (fromNode→platformNode) → `routeSteps` 저장 후 S5
 - 경로 조회 실패 시 → E1 정적 안내 화면으로 폴백
@@ -100,7 +118,7 @@ src/
 │  ├─ client.js                    # fetch 래퍼, ApiError
 │  ├─ normalize.js                 # 백엔드 응답 → 내부 모델 정규화
 │  ├─ guide.js                     # fetchSession, fetchRoute (구 API)
-│  └─ tickets.js                   # fetchUserGuide, fetchUserTickets, fetchPath 등 (새 API)
+│  └─ tickets.js                   # guide/steps·walk·stream·simulate·route-points, tickets, path, TTS
 ├─ components/
 │  ├─ SMS_Entry.jsx                # SMS 진입 또는 userId 입력 → fetchUserGuide
 │  ├─ S1_Join.jsx                  # 서비스 진입
