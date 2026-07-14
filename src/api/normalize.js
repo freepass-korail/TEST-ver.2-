@@ -152,8 +152,16 @@ export function normalizeUserGuide(data = {}) {
     message: data.message ?? null,
     reservationId,
     ticket: normalizeApiTicket(ticket),
-    fromNode: data.fromNode ?? null,      // 출발 노드 ID
-    toNode: data.platformNode ?? null,    // 목적지 플랫폼 노드 ID
+    fromNode: data.fromNode ?? data.originNode ?? null,
+    toNode: data.platformNode ?? data.destinationNode ?? data.toNode ?? null,
+    originNode: data.originNode ?? data.fromNode ?? null,
+    destinationNode: data.destinationNode ?? data.platformNode ?? null,
+    routeLengthM:
+      data.routeLengthM != null
+        ? Number(data.routeLengthM)
+        : data.totalDistanceM != null
+          ? Number(data.totalDistanceM)
+          : undefined,
     route,
   };
 }
@@ -263,5 +271,159 @@ export function normalizeRoute(data) {
           ? Number(data.total_distance_m)
           : undefined,
     steps,
+  };
+}
+
+/** GET /api/users/{userId}/tickets 목록 */
+export function normalizeTicketList(data) {
+  const list = Array.isArray(data) ? data : data?.tickets ?? data?.content ?? [];
+  return list.map(normalizeApiTicket);
+}
+
+/** GET /api/users/{userId}/guide — alias */
+export const normalizeGuideResponse = normalizeUserGuide;
+
+/** GET /api/paths — alias */
+export const normalizePathResponse = normalizePath;
+
+/**
+ * GuideStep: seq, nodeId, name, screenText, voiceText, audioBase64
+ * (구 text 필드 → screenText로 흡수)
+ */
+export function normalizeGuideStep(raw = {}) {
+  const screenText = String(raw.screenText ?? raw.screen_text ?? raw.text ?? '');
+  return {
+    seq: Number(raw.seq ?? 0),
+    nodeId: String(raw.nodeId ?? raw.node_id ?? ''),
+    name: String(raw.name ?? ''),
+    screenText,
+    voiceText: String(raw.voiceText ?? raw.voice_text ?? ''),
+    audioBase64: String(raw.audioBase64 ?? raw.audio_base64 ?? ''),
+    /** UI 호환 */
+    text: screenText,
+  };
+}
+
+/** GET /api/users/{userId}/guide/steps */
+export function normalizeGuideStepsResponse(data = {}) {
+  if (data.hasTicketToday === false) {
+    throw Object.assign(new Error(data.message ?? '오늘 출발 승차권이 없습니다.'), {
+      code: 'NO_TICKET_TODAY',
+    });
+  }
+  return {
+    hasTicketToday: data.hasTicketToday ?? true,
+    routeFound: data.routeFound ?? false,
+    message: data.message ?? null,
+    steps: Array.isArray(data.steps) ? data.steps.map(normalizeGuideStep) : [],
+  };
+}
+
+/**
+ * WalkStep: 지터 좌표 + 경로 해석 + nested guide
+ */
+export function normalizeWalkStep(raw = {}) {
+  const guideRaw = raw.guide ?? null;
+  return {
+    seq: Number(raw.seq ?? 0),
+    nodeId: String(raw.nodeId ?? ''),
+    name: String(raw.name ?? ''),
+    thrownEastM: Number(raw.thrownEastM ?? 0),
+    thrownNorthM: Number(raw.thrownNorthM ?? 0),
+    distanceToNearestNodeM: Number(raw.distanceToNearestNodeM ?? 0),
+    offRouteM: Number(raw.offRouteM ?? 0),
+    remainingAlongRouteM: Number(raw.remainingAlongRouteM ?? 0),
+    arrived: Boolean(raw.arrived),
+    guide: guideRaw ? normalizeGuideStep(guideRaw) : null,
+  };
+}
+
+/** GET /api/users/{userId}/guide/walk */
+export function normalizeGuideWalkResponse(data = {}) {
+  if (data.hasTicketToday === false) {
+    throw Object.assign(new Error(data.message ?? '오늘 출발 승차권이 없습니다.'), {
+      code: 'NO_TICKET_TODAY',
+    });
+  }
+  return {
+    hasTicketToday: data.hasTicketToday ?? true,
+    routeFound: data.routeFound ?? false,
+    message: data.message ?? null,
+    originNode: data.originNode ?? null,
+    destinationNode: data.destinationNode ?? null,
+    routeLengthM:
+      data.routeLengthM != null ? Number(data.routeLengthM) : undefined,
+    steps: Array.isArray(data.steps) ? data.steps.map(normalizeWalkStep) : [],
+  };
+}
+
+/** GET /api/users/{userId}/guide/simulate */
+export function normalizeGuideSimulateResponse(data = {}) {
+  if (data.hasTicketToday === false) {
+    throw Object.assign(new Error(data.message ?? '오늘 출발 승차권이 없습니다.'), {
+      code: 'NO_TICKET_TODAY',
+    });
+  }
+  const currentStep = data.currentStep
+    ? normalizeGuideStep(data.currentStep)
+    : null;
+  return {
+    hasTicketToday: data.hasTicketToday ?? true,
+    routeFound: data.routeFound ?? false,
+    message: data.message ?? null,
+    originNode: data.originNode ?? null,
+    destinationNode: data.destinationNode ?? null,
+    steps: Number(data.steps ?? 0),
+    headingDeg: Number(data.headingDeg ?? data.heading ?? 0),
+    stepLengthM: Number(data.stepLengthM ?? 0),
+    movedDistanceM: Number(data.movedDistanceM ?? 0),
+    relEastM: Number(data.relEastM ?? 0),
+    relNorthM: Number(data.relNorthM ?? 0),
+    curLat: data.curLat != null ? Number(data.curLat) : null,
+    curLng: data.curLng != null ? Number(data.curLng) : null,
+    traveledAlongRouteM: Number(data.traveledAlongRouteM ?? 0),
+    remainingAlongRouteM: Number(data.remainingAlongRouteM ?? 0),
+    offRouteM: Number(data.offRouteM ?? 0),
+    nearestSegment: data.nearestSegment ?? null,
+    routeLengthM:
+      data.routeLengthM != null ? Number(data.routeLengthM) : undefined,
+    straightLineToDestM:
+      data.straightLineToDestM != null
+        ? Number(data.straightLineToDestM)
+        : undefined,
+    nearestNodeId: data.nearestNodeId ?? null,
+    distanceToNearestNodeM: Number(data.distanceToNearestNodeM ?? 0),
+    atNode: Boolean(data.atNode),
+    currentStepSeq: Number(data.currentStepSeq ?? -1),
+    currentStep,
+    stepChanged: Boolean(data.stepChanged),
+    arrived: Boolean(data.arrived),
+  };
+}
+
+/** GET /api/users/{userId}/guide/route-points */
+export function normalizeRoutePointsResponse(data = {}) {
+  if (data.hasTicketToday === false) {
+    throw Object.assign(new Error(data.message ?? '오늘 출발 승차권이 없습니다.'), {
+      code: 'NO_TICKET_TODAY',
+    });
+  }
+  const points = Array.isArray(data.points)
+    ? data.points.map((p = {}, i) => ({
+        seq: Number(p.seq ?? i),
+        nodeId: String(p.nodeId ?? ''),
+        name: String(p.name ?? ''),
+        relEastM: Number(p.relEastM ?? 0),
+        relNorthM: Number(p.relNorthM ?? 0),
+        cumulativeDistanceM: Number(p.cumulativeDistanceM ?? 0),
+      }))
+    : [];
+  return {
+    hasTicketToday: data.hasTicketToday ?? true,
+    routeFound: data.routeFound ?? false,
+    message: data.message ?? null,
+    originNode: data.originNode ?? null,
+    destinationNode: data.destinationNode ?? null,
+    points,
   };
 }

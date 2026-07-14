@@ -1,92 +1,206 @@
 import { apiRequest } from './client';
-import { normalizeApiTicket, normalizeUserGuide, normalizePath } from './normalize';
+import { API_BASE } from './config';
+import {
+  normalizeTicketList,
+  normalizeGuideResponse,
+  normalizeGuideStepsResponse,
+  normalizeGuideWalkResponse,
+  normalizeWalkStep,
+  normalizeGuideSimulateResponse,
+  normalizeRoutePointsResponse,
+  normalizePathResponse,
+} from './normalize';
 
-/**
- * 유저의 승차권 목록 조회 (출발 시각 내림차순)
- * GET /api/users/{userId}/tickets
- * @param {number} userId
- */
+function toQuery(params = {}) {
+  const q = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === '') return;
+    q.set(key, String(value));
+  });
+  const s = q.toString();
+  return s ? `?${s}` : '';
+}
+
+/** GET /api/users/{userId}/tickets — 목록 (정규화) */
 export async function fetchUserTickets(userId) {
-  if (!userId) throw new Error('userId가 없습니다.');
   const data = await apiRequest(`/api/users/${userId}/tickets`);
-  return Array.isArray(data) ? data.map(normalizeApiTicket) : [];
+  return normalizeTicketList(data);
+}
+
+/** GET /api/users/{userId}/tickets/{ticketId} — 단건 (정규화) */
+export async function fetchUserTicket(userId, ticketId) {
+  const data = await apiRequest(`/api/users/${userId}/tickets/${ticketId}`);
+  return normalizeTicketList([data])[0] ?? null;
 }
 
 /**
- * 오늘 승차권 승강장 안내
- * GET /api/users/{userId}/guide[?fromNode=n01]
- * @param {number} userId
- * @param {string} [fromNode] 시작 노드 (생략 시 서버가 출입구 노드로 자동 설정)
+ * GET /api/users/{userId}/guide
+ * @param {number|string} userId
+ * @param {{ fromNode?: string }} [options]
  */
-export async function fetchUserGuide(userId, fromNode) {
-  if (!userId) throw new Error('userId가 없습니다.');
-  const qs = fromNode ? `?fromNode=${encodeURIComponent(fromNode)}` : '';
-  const data = await apiRequest(`/api/users/${userId}/guide${qs}`);
-  return normalizeUserGuide(data);
+export async function fetchUserGuide(userId, { fromNode } = {}) {
+  const data = await apiRequest(
+    `/api/users/${userId}/guide${toQuery({ fromNode })}`,
+  );
+  return normalizeGuideResponse(data);
 }
 
 /**
- * 승차권 목록 조회
- * GET /api/tickets[?userId={userId}]
- * @param {number} [userId] 생략 시 전체 조회
+ * GET /api/users/{userId}/guide/steps
+ * 단계별 screenText · voiceText · audioBase64
+ * @param {number|string} userId
+ * @param {{ fromNode?: string }} [options]
  */
-export async function fetchAllTickets(userId) {
-  const qs = userId ? `?userId=${userId}` : '';
-  const data = await apiRequest(`/api/tickets${qs}`);
-  return Array.isArray(data) ? data.map(normalizeApiTicket) : [];
+export async function fetchUserGuideSteps(userId, { fromNode } = {}) {
+  const data = await apiRequest(
+    `/api/users/${userId}/guide/steps${toQuery({ fromNode })}`,
+  );
+  return normalizeGuideStepsResponse(data);
 }
 
 /**
- * 승차권 단건 조회
- * GET /api/tickets/{ticketId}
- * @param {number} ticketId
+ * GET /api/users/{userId}/guide/walk
+ * 전체 경로 자동 워킹(배치). 노드별 지터 좌표 + 해석 결과 + 음성
+ * @param {number|string} userId
+ * @param {{ fromNode?: string, jitterM?: number }} [options]
  */
-export async function fetchTicket(ticketId) {
-  if (!ticketId) throw new Error('ticketId가 없습니다.');
-  const data = await apiRequest(`/api/tickets/${ticketId}`);
-  return normalizeApiTicket(data);
+export async function fetchGuideWalk(userId, { fromNode, jitterM = 0 } = {}) {
+  const data = await apiRequest(
+    `/api/users/${userId}/guide/walk${toQuery({ fromNode, jitterM })}`,
+  );
+  return normalizeGuideWalkResponse(data);
 }
 
 /**
- * 오늘 승차권 단계별 안내 (음성 포함)
- * GET /api/users/{userId}/guide/steps[?fromNode=n01]
- * @param {number} userId
- * @param {string} [fromNode]
- * @returns {Promise<{ hasTicketToday: boolean, routeFound: boolean, steps: Array<{seq,nodeId,name,text,audioBase64}> }>}
+ * GET /api/users/{userId}/guide/walk/stream (SSE)
+ * EventSource 연결. 이벤트: step | done | info
+ *
+ * @param {number|string} userId
+ * @param {{
+ *   fromNode?: string,
+ *   intervalMs?: number,
+ *   jitterM?: number,
+ *   onStep?: (step: object) => void,
+ *   onDone?: (data: string) => void,
+ *   onInfo?: (data: string) => void,
+ *   onError?: (err: Event) => void,
+ * }} [options]
+ * @returns {EventSource}
  */
-export async function fetchUserGuideSteps(userId, fromNode) {
-  if (!userId) throw new Error('userId가 없습니다.');
-  const qs = fromNode ? `?fromNode=${encodeURIComponent(fromNode)}` : '';
-  return apiRequest(`/api/users/${userId}/guide/steps${qs}`);
+export function openGuideWalkStream(
+  userId,
+  {
+    fromNode,
+    intervalMs = 3000,
+    jitterM = 0,
+    onStep,
+    onDone,
+    onInfo,
+    onError,
+  } = {},
+) {
+  const path = `/api/users/${userId}/guide/walk/stream${toQuery({
+    fromNode,
+    intervalMs,
+    jitterM,
+  })}`;
+  const url = `${API_BASE}${path}`;
+  const es = new EventSource(url);
+
+  es.addEventListener('step', (ev) => {
+    try {
+      const raw = JSON.parse(ev.data);
+      onStep?.(normalizeWalkStep(raw));
+    } catch (e) {
+      console.error('[guide/walk/stream] step parse error', e);
+    }
+  });
+
+  es.addEventListener('done', (ev) => {
+    onDone?.(ev.data ?? '');
+    es.close();
+  });
+
+  es.addEventListener('info', (ev) => {
+    onInfo?.(ev.data ?? '');
+    es.close();
+  });
+
+  es.onerror = (err) => {
+    onError?.(err);
+  };
+
+  return es;
 }
 
 /**
- * 텍스트 → 음성 변환 (Google Cloud TTS)
- * POST /api/tts
+ * GET /api/users/{userId}/guide/simulate
+ * 걸음수·방위 기반 가상 이동. stepChanged 일 때만 audioBase64 생성
+ * @param {number|string} userId
+ * @param {{
+ *   fromNode?: string,
+ *   steps: number,
+ *   heading: number,
+ *   stepLength?: number,
+ *   lastStepSeq?: number,
+ * }} options
+ */
+export async function fetchGuideSimulate(
+  userId,
+  {
+    fromNode,
+    steps,
+    heading,
+    stepLength = 0.7,
+    lastStepSeq = -1,
+  } = {},
+) {
+  const data = await apiRequest(
+    `/api/users/${userId}/guide/simulate${toQuery({
+      fromNode,
+      steps,
+      heading,
+      stepLength,
+      lastStepSeq,
+    })}`,
+  );
+  return normalizeGuideSimulateResponse(data);
+}
+
+/**
+ * GET /api/users/{userId}/guide/route-points
+ * 경로 노드 상대좌표 (시뮬레이션 재현용)
+ * @param {number|string} userId
+ * @param {{ fromNode?: string }} [options]
+ */
+export async function fetchGuideRoutePoints(userId, { fromNode } = {}) {
+  const data = await apiRequest(
+    `/api/users/${userId}/guide/route-points${toQuery({ fromNode })}`,
+  );
+  return normalizeRoutePointsResponse(data);
+}
+
+/**
+ * POST /api/tts — { text } → { audioBase64 }
  * @param {string} text
- * @returns {Promise<string>} base64 MP3
  */
 export async function fetchTts(text) {
-  if (!text) throw new Error('text가 없습니다.');
   const data = await apiRequest('/api/tts', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ text }),
   });
-  // 서버가 { audioBase64: "..." } 또는 { audio: "..." } 형태로 반환
-  return data.audioBase64 ?? data.audio ?? data;
+  return {
+    audioBase64: String(data?.audioBase64 ?? data?.audio_base64 ?? ''),
+  };
 }
 
 /**
- * 두 노드 간 최적 경로 (Dijkstra)
- * GET /api/paths?from={from}&to={to}
- * @param {{ from: string, to: string }} params
- * @returns {Promise<import('./normalize').GuideRoute>}
+ * GET /api/paths?from=&to= — PathResponse 정규화
+ * @param {string} from
+ * @param {string} to
  */
-export async function fetchPath({ from, to }) {
-  if (!from || !to) throw new Error('from/to 노드 ID가 필요합니다.');
-  const data = await apiRequest(`/api/paths?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
-  if (!data.found) throw new Error('경로를 찾을 수 없습니다.');
-  return normalizePath(data);
+export async function fetchPath(from, to) {
+  const q = new URLSearchParams({ from, to });
+  const data = await apiRequest(`/api/paths?${q}`);
+  return normalizePathResponse(data);
 }
-
