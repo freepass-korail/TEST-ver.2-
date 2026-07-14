@@ -1,9 +1,12 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { openGuideWalkStream } from '../api/tickets';
 import useFlowStore from '../store/useFlowStore';
+import { getArrowRotation, getBearing } from '../utils/geo';
+import useDeviceOrientation from './useDeviceOrientation';
 
 /**
  * guide/walk/stream SSE로 S5 내비게이션 UI를 구동한다.
+ * 화살표: destinationAngle = bearing(현재 노드 → 다음 노드) − deviceHeading
  * @param {{ enabled?: boolean, intervalMs?: number, jitterM?: number }} [options]
  */
 function useWalkStream({
@@ -17,12 +20,34 @@ function useWalkStream({
   const applyWalkStep = useFlowStore((s) => s.applyWalkStep);
   const setStep = useFlowStore((s) => s.setStep);
   const setNavigation = useFlowStore((s) => s.setNavigation);
+  const { startListening, stopListening } = useDeviceOrientation();
+
+  const syncArrowFromHeading = useCallback(
+    (heading) => {
+      const { routeSteps, currentStepIndex, destination } = useFlowStore.getState();
+      const from = routeSteps[currentStepIndex];
+      const toLat = destination?.lat ?? from?.lat;
+      const toLng = destination?.lng ?? from?.lng;
+      if (from?.lat == null || toLat == null) {
+        setNavigation({ heading });
+        return;
+      }
+      const bearing = getBearing(from.lat, from.lng, toLat, toLng);
+      setNavigation({
+        heading,
+        bearing,
+        destinationAngle: getArrowRotation(bearing, heading),
+      });
+    },
+    [setNavigation],
+  );
 
   const stopStream = useCallback(() => {
     esRef.current?.close();
     esRef.current = null;
+    stopListening();
     setNavigation({ isTracking: false });
-  }, [setNavigation]);
+  }, [setNavigation, stopListening]);
 
   useEffect(() => {
     if (!enabled) return undefined;
@@ -38,11 +63,14 @@ function useWalkStream({
     arrivedRef.current = false;
     setNavigation({ isTracking: true, distanceM: null, overshoot: false });
 
+    startListening(syncArrowFromHeading);
+
     const finish = () => {
       if (arrivedRef.current) return;
       arrivedRef.current = true;
       esRef.current?.close();
       esRef.current = null;
+      stopListening();
       setNavigation({ isTracking: false });
       setStep('S5_1');
     };
@@ -82,6 +110,7 @@ function useWalkStream({
     return () => {
       esRef.current?.close();
       esRef.current = null;
+      stopListening();
     };
   }, [
     enabled,
@@ -90,7 +119,10 @@ function useWalkStream({
     applyWalkStep,
     setStep,
     setNavigation,
+    startListening,
+    stopListening,
     stopStream,
+    syncArrowFromHeading,
   ]);
 
   return { stopStream };

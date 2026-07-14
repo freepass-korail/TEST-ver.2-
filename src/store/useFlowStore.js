@@ -150,6 +150,7 @@ const useFlowStore = create((set, get) => ({
 
   /**
    * guide/walk/stream step → S5 UI 상태 반영
+   * 화살표: destinationAngle = bearing(현재 노드 → 다음 노드) − heading
    * @param {{
    *   nodeId?: string,
    *   remainingAlongRouteM?: number,
@@ -159,17 +160,28 @@ const useFlowStore = create((set, get) => ({
    */
   applyWalkStep: (walkStep) => {
     if (!walkStep) return;
-    const { routeSteps, voiceGuide, currentInstruction } = get();
+    const { routeSteps, voiceGuide, currentInstruction, heading } = get();
     const nodeId = walkStep.nodeId ? String(walkStep.nodeId) : '';
     const matchedIndex = nodeId
       ? routeSteps.findIndex((s) => s.nodeId === nodeId)
       : -1;
     const matched = matchedIndex >= 0 ? routeSteps[matchedIndex] : null;
+    const next =
+      matchedIndex >= 0 && matchedIndex < routeSteps.length - 1
+        ? routeSteps[matchedIndex + 1]
+        : matched;
     const instruction =
       walkStep.guide?.screenText ||
       (nodeId && get().screenTextMap[nodeId]) ||
       matched?.instruction ||
       currentInstruction;
+
+    let bearing = get().bearing;
+    let destinationAngle = get().destinationAngle;
+    if (matched?.lat != null && next?.lat != null) {
+      bearing = getBearing(matched.lat, matched.lng, next.lat, next.lng);
+      destinationAngle = getArrowRotation(bearing, heading || 0);
+    }
 
     set({
       currentInstruction: instruction,
@@ -180,8 +192,11 @@ const useFlowStore = create((set, get) => ({
       ...(matchedIndex >= 0
         ? {
             currentStepIndex: matchedIndex,
-            destination: stepToDestination(matched),
+            destination: stepToDestination(next),
           }
+        : {}),
+      ...(bearing != null
+        ? { bearing, destinationAngle }
         : {}),
       isTracking: true,
       overshoot: false,
