@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import useFlowStore from '../store/useFlowStore';
 import FigmaHeader from './common/FigmaHeader';
 import FigmaPrimaryButton from './common/FigmaPrimaryButton';
+import GuideDevPanel from './common/GuideDevPanel';
 import { fetchRoute } from '../api/guide';
 import { fetchPath } from '../api/tickets';
 import { typography } from '../styles/theme';
@@ -105,6 +106,7 @@ function S4_Standby() {
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', background: '#FFFFFF', overflow: 'hidden' }}>
       <FigmaHeader />
+      <GuideDevPanel />
 
       {/* ── 카드 1: 타는 곳 ── */}
       {/* 카드 배경 */}
