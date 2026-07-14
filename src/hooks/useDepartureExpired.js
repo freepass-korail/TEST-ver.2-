@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { getMinutesUntilDeparture } from '../utils/time';
+import { isWalkStreamEnabled } from '../config/features';
 
 /** walk/stream·DEV 데모에서는 과거 출발시각 티켓도 안내를 막지 않음 */
 function shouldSkipExpiryCheck() {
   if (import.meta.env.DEV) return true;
-  return import.meta.env.VITE_USE_WALK_STREAM !== 'false';
+  return isWalkStreamEnabled();
 }
 
 /**

@@ -12,12 +12,13 @@ import S5NavigationArrow from './common/S5NavigationArrow';
 import { formatGuideDistance, getCompassDotPosition, getNavigationInstruction } from '../utils/geo';
 import { typography } from '../styles/theme';
 import { abs, figma, figmaText } from '../styles/figmaLayout';
+import { isWalkStreamEnabled } from '../config/features';
 
 const FF = typography.fontFamily;
 const GREEN = '#3FAD62';
 const CHECK_GREEN = '#00C35C';
 /** walk/stream으로 S5 구동 (GPS 비활성). VITE_USE_WALK_STREAM=false 이면 GPS */
-const USE_WALK_STREAM = import.meta.env.VITE_USE_WALK_STREAM !== 'false';
+const USE_WALK_STREAM = isWalkStreamEnabled();
 
 /** 피그마 체크: 99×91 / top 345 left 150 / border 30 #00C35C */
 function DepartureCheckMark() {

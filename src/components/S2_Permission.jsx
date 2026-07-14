@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import useFlowStore from '../store/useFlowStore';
 import S1_Join from './S1_Join';
@@ -9,6 +9,7 @@ import {
   needsIOSOrientationPermission,
   requestOrientationPermission,
 } from '../hooks/useDeviceOrientation';
+import { isWalkStreamEnabled } from '../config/features';
 
 const OverlayRoot = styled.div`
   position: relative;
@@ -28,6 +29,7 @@ const INAPP_HINT =
 
 function S2_Permission() {
   const { setStep, mapInstance } = useFlowStore();
+  const skipGeo = isWalkStreamEnabled();
   const isIOS = needsIOSOrientationPermission();
   const [orientationGranted, setOrientationGranted] = useState(!isIOS);
   const [isRequesting, setIsRequesting] = useState(false);
@@ -42,6 +44,14 @@ function S2_Permission() {
     setErrorMessage(null);
     setStep('S3');
   };
+
+  // walk/stream 모드는 GPS·방향 권한 없이 진행
+  useEffect(() => {
+    if (!skipGeo) return undefined;
+    handlePermissionSuccess();
+    return undefined;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [skipGeo]);
 
   const handleLocationRequest = () => {
     setIsRequesting(true);
@@ -102,6 +112,10 @@ function S2_Permission() {
 
   const handleAllow = () => {
     if (isRequesting) return;
+    if (skipGeo) {
+      handlePermissionSuccess();
+      return;
+    }
 
     if (isIOS) {
       if (!orientationGranted) {
@@ -114,6 +128,14 @@ function S2_Permission() {
 
     handleAndroidPermissions();
   };
+
+  if (skipGeo) {
+    return (
+      <OverlayRoot>
+        <S1_Join dimmed />
+      </OverlayRoot>
+    );
+  }
 
   return (
     <OverlayRoot>
