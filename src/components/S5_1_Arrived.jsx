@@ -111,33 +111,35 @@ function S5_1_Arrived() {
         />
       ))}
 
-      {/* 흰색 원 + 체크 이미지 (99×91, 원 중앙) */}
+      {/* 흰색 원 */}
       <div
         aria-hidden
         style={{
           ...abs(s51.checkCircle),
           borderRadius: s51.checkCircle.radius,
           background: s51.checkCircle.background,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
         }}
-      >
-        <img
-          src={arrivalCheckImg}
-          alt=""
-          width={s51.checkIcon.width}
-          height={s51.checkIcon.height}
-          draggable={false}
-          style={{
-            width: s51.checkIcon.width,
-            height: s51.checkIcon.height,
-            objectFit: 'contain',
-            display: 'block',
-            flexShrink: 0,
-          }}
-        />
-      </div>
+      />
+
+      {/* 가운데 체크: 99×91 / top 345 left 150 */}
+      <img
+        src={arrivalCheckImg}
+        alt=""
+        aria-hidden
+        width={s51.checkIcon.width}
+        height={s51.checkIcon.height}
+        draggable={false}
+        style={{
+          position: 'absolute',
+          top: s51.checkIcon.top,
+          left: s51.checkIcon.left,
+          width: s51.checkIcon.width,
+          height: s51.checkIcon.height,
+          objectFit: 'contain',
+          display: 'block',
+          pointerEvents: 'none',
+        }}
+      />
 
       <p style={{ ...leftText(s51.arrivalTitle), fontWeight: 800 }}>도착</p>
       <p style={{ ...leftText(s51.arrivalMessage), whiteSpace: 'pre-line' }}>{arrivalMessage}</p>
