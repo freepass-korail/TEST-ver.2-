@@ -8,19 +8,19 @@ import { fetchPath } from '../api/tickets';
 import { typography } from '../styles/theme';
 
 import logoKtx        from '../assets/ktx-logo.png';
-import logoMugunghwa  from '../assets/train-mugunghwa.png';
-import logoItx        from '../assets/train-itx.png';
-import logoNuriro     from '../assets/train-nuriro.png';
-import logoItxCheong  from '../assets/train-itx-cheongchun.png';
-import logoItxSaemaul from '../assets/train-itx-saemaul.png';
+import logoMugunghwa  from '../assets/train-mugunghwa-logo.png';
+import logoItx        from '../assets/train-itx-logo.png';
+import logoNuriro     from '../assets/train-nuriho-logo.png';
+import logoItxCheong  from '../assets/train-itx-cheongchun-logo.png';
+import logoItxSaemaul from '../assets/train-itx-samaul-logo.png';
 
 const TRAIN_LOGO_MAP = [
   { keys: ['ktx'],            logo: logoKtx },
   { keys: ['무궁화'],          logo: logoMugunghwa },
-  { keys: ['itx-청춘','itx 청춘','청춘'], logo: logoItxCheong },
-  { keys: ['itx-새마을','itx 새마을','새마을'], logo: logoItxSaemaul },
+  { keys: ['itx-청춘', 'itx 청춘', '청춘'], logo: logoItxCheong },
+  { keys: ['itx-새마을', 'itx 새마을', '새마을'], logo: logoItxSaemaul },
   { keys: ['itx'],            logo: logoItx },
-  { keys: ['누리로'],          logo: logoNuriro },
+  { keys: ['누리로', '누리호'], logo: logoNuriro },
 ];
 
 function getTrainLogo(trainName) {

@@ -9,11 +9,18 @@ import { abs, figma, figmaText } from '../styles/figmaLayout';
 
 function ArrivalCheckIcon({ width, height, color, strokeWidth }) {
   return (
-    <svg width={width} height={height} viewBox="0 0 100 100" fill="none" aria-hidden>
+    <svg
+      width={width}
+      height={height}
+      viewBox="0 0 99 91"
+      fill="none"
+      aria-hidden
+      style={{ overflow: 'visible', opacity: 1 }}
+    >
       <path
-        d="M22 52L40 70L78 28"
+        d="M10 40L32 62L76 16"
         stroke={color}
-        strokeWidth={strokeWidth ?? 14}
+        strokeWidth={strokeWidth ?? 30}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -132,11 +139,15 @@ function S5_1_Arrived() {
         }}
       />
 
-      {/* 체크 아이콘 */}
+      {/* 체크 아이콘 — 피그마: 99×91 / top 345 left 150 / border 30 #286EF0 */}
       <div
         aria-hidden
         style={{
-          ...abs(s51.checkIcon),
+          position: 'absolute',
+          top: s51.checkIcon.top,
+          left: s51.checkIcon.left,
+          width: s51.checkIcon.width,
+          height: s51.checkIcon.height,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
