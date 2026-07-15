@@ -20,7 +20,7 @@ const CHECK_GREEN = '#00C35C';
 /** walk/stream으로 S5 구동 (GPS 비활성). VITE_USE_WALK_STREAM=false 이면 GPS */
 const USE_WALK_STREAM = isWalkStreamEnabled();
 
-/** 피그마 체크: 99×91 / top 345 left 150 / border 30 #00C35C */
+/** 피그마 체크: 원 중앙 / 99×91 / border 30 #00C35C */
 function DepartureCheckMark() {
   return (
     <svg
@@ -29,16 +29,10 @@ function DepartureCheckMark() {
       viewBox="0 0 99 91"
       fill="none"
       aria-hidden
-      style={{
-        position: 'absolute',
-        top: 345,
-        left: 150,
-        overflow: 'visible',
-        opacity: 1,
-      }}
+      style={{ display: 'block', flexShrink: 0 }}
     >
       <path
-        d="M10 40L32 62L76 16"
+        d="M22 50L40 68L76 28"
         stroke={CHECK_GREEN}
         strokeWidth={30}
         strokeLinecap="round"
@@ -85,13 +79,17 @@ function DepartureExpiredOverlay({ info, s5, text, leftText, onClose }) {
         }} />
       ))}
 
-      {/* 체크 원 + 체크 (피그마 좌표) */}
+      {/* 체크 원 + 체크 (흰 원 중앙) */}
       <div style={{
         position: 'absolute', top: 294, left: 109,
         width: 184, height: 184, borderRadius: '50%',
         background: '#FFFFFF',
-      }} />
-      <DepartureCheckMark />
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+        <DepartureCheckMark />
+      </div>
 
       {/* 제목 */}
       <p style={{

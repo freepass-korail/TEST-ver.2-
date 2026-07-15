@@ -22,11 +22,16 @@ import E4_Departed from './components/E4_Departed';
 import E5_GuideDone from './components/E5_GuideDone';
 import E6_Refunded from './components/E6_Refunded';
 import NetworkOfflineOverlay from './components/common/NetworkOfflineOverlay';
+import { preloadTrainLogos } from './utils/preloadTrainLogos';
 
 function App() {
   const { step, setStep, setReservation } = useFlowStore();
   const currentScreen = screenConfig[step] || screenConfig.S1;
   const [sessionError, setSessionError] = useState(null);
+
+  useEffect(() => {
+    preloadTrainLogos();
+  }, []);
 
   useEffect(() => {
     const token = getSessionTokenFromUrl();

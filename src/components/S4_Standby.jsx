@@ -6,13 +6,14 @@ import FigmaPrimaryButton from './common/FigmaPrimaryButton';
 import { fetchRoute } from '../api/guide';
 import { fetchPath } from '../api/tickets';
 import { typography } from '../styles/theme';
-
-import logoKtx        from '../assets/ktx-logo.png';
-import logoMugunghwa  from '../assets/train-mugunghwa-logo.png';
-import logoItx        from '../assets/train-itx-logo.png';
-import logoNuriro     from '../assets/train-nuriho-logo.png';
-import logoItxCheong  from '../assets/train-itx-cheongchun-logo.png';
-import logoItxSaemaul from '../assets/train-itx-samaul-logo.png';
+import {
+  logoKtx,
+  logoMugunghwa,
+  logoItx,
+  logoNuriro,
+  logoItxCheong,
+  logoItxSaemaul,
+} from '../utils/preloadTrainLogos';
 
 const TRAIN_LOGO_MAP = [
   { keys: ['ktx'],            logo: logoKtx },
@@ -164,6 +165,8 @@ function S4_Standby() {
         src={trainLogo}
         alt={info.trainName}
         draggable={false}
+        fetchPriority="high"
+        decoding="sync"
         style={{
           position: 'absolute', top: 586, left: 95,
           width: 140, height: 46, objectFit: 'contain',

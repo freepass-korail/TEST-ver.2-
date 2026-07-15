@@ -7,20 +7,21 @@ import { DEPARTURE_URGENT_COLOR } from '../utils/time';
 import { typography } from '../styles/theme';
 import { abs, figma, figmaText } from '../styles/figmaLayout';
 
-function ArrivalCheckIcon({ width, height, color, strokeWidth }) {
+function ArrivalCheckIcon({ color = '#286EF0', strokeWidth = 30 }) {
   return (
     <svg
-      width={width}
-      height={height}
+      width={99}
+      height={91}
       viewBox="0 0 99 91"
       fill="none"
       aria-hidden
-      style={{ overflow: 'visible', opacity: 1 }}
+      style={{ display: 'block', flexShrink: 0 }}
     >
+      {/* stroke 30이 viewBox 안에 들어가도록 path inset — 흰 원 중앙 정렬 */}
       <path
-        d="M10 40L32 62L76 16"
+        d="M22 50L40 68L76 28"
         stroke={color}
-        strokeWidth={strokeWidth ?? 30}
+        strokeWidth={strokeWidth}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -45,7 +46,9 @@ function S5_1_Arrived() {
 
   const arrivalMessage = useMemo(() => {
     const car = info.carNumber?.trim();
-    return car ? `여기서 ${car}를 기다리세요.` : '여기서 열차를 기다리세요.';
+    if (!car) return '여기서 열차를 기다리세요.';
+    const label = /호차/.test(car) ? car : `${car}호차`;
+    return `여기서 ${label}를 기다리세요.`;
   }, [info.carNumber]);
 
   useEffect(() => {
@@ -92,7 +95,7 @@ function S5_1_Arrived() {
           background: s5.ticketCard.background,
         }}
       />
-      <p style={{ ...text(s5.route), whiteSpace: 'nowrap' }}>{`${info.departureStation}→${info.arrivalStation}`}</p>
+      <p style={{ ...text(s5.route), whiteSpace: 'nowrap', fontWeight: 700 }}>{`${info.departureStation}→${info.arrivalStation}`}</p>
       <p style={text(s5.trainName)}>{info.trainName}</p>
       <p style={text(s5.platformLabel)}>타는곳</p>
       <p style={text(s5.carLabel)}>호차번호</p>
@@ -129,39 +132,25 @@ function S5_1_Arrived() {
         />
       ))}
 
-      {/* 흰색 원 */}
+      {/* 흰색 원 + 체크 (피그마: 원 중앙에 99×91 / stroke 30 #286EF0) */}
       <div
         aria-hidden
         style={{
           ...abs(s51.checkCircle),
           borderRadius: s51.checkCircle.radius,
           background: s51.checkCircle.background,
-        }}
-      />
-
-      {/* 체크 아이콘 — 피그마: 99×91 / top 345 left 150 / border 30 #286EF0 */}
-      <div
-        aria-hidden
-        style={{
-          position: 'absolute',
-          top: s51.checkIcon.top,
-          left: s51.checkIcon.left,
-          width: s51.checkIcon.width,
-          height: s51.checkIcon.height,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
         }}
       >
         <ArrivalCheckIcon
-          width={s51.checkIcon.width}
-          height={s51.checkIcon.height}
           color={s51.checkIcon.color}
           strokeWidth={s51.checkIcon.strokeWidth}
         />
       </div>
 
-      <p style={leftText(s51.arrivalTitle)}>도착</p>
+      <p style={{ ...leftText(s51.arrivalTitle), fontWeight: 800 }}>도착</p>
       <p style={{ ...leftText(s51.arrivalMessage), whiteSpace: 'pre-line' }}>{arrivalMessage}</p>
 
       {/* 닫기 */}
