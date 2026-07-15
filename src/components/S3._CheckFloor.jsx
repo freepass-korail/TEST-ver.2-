@@ -18,12 +18,6 @@ const s3TitleSpec = {
 
 const BLUE = '#286EF0';
 
-const underline = {
-  borderBottom: `4px solid ${BLUE}`,
-  paddingBottom: 2,
-  boxDecorationBreak: 'clone',
-};
-
 function S3Title() {
   return (
     <span
@@ -36,9 +30,9 @@ function S3Title() {
         lineHeight: '140%',
       }}
     >
-      <span style={{ ...underline, color: '#000000' }}>지금 현재</span>
+      <span>지금 현재</span>
       <span>
-        <span style={{ ...underline, color: BLUE }}>3층</span>
+        <span style={{ color: BLUE }}>3층</span>
         <span>에 계신가요?</span>
       </span>
     </span>
